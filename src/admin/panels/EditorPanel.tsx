@@ -2,11 +2,11 @@ import { ImageField } from '../ImageField'
 import { RepeatableList } from '../RepeatableList'
 import { SectionCard, TextAreaField, TextField } from '../fields'
 import { RichTitleField } from '../RichTitleField'
+import { useSection } from './useSection'
 import type { PanelProps } from './types'
 
 export function EditorPanel({ draft, update }: PanelProps) {
-  const setEditor = (patch: Partial<(typeof draft)['editor']>) =>
-    update((d) => ({ ...d, editor: { ...d.editor, ...patch } }))
+  const setEditor = useSection(update, 'editor')
 
   return (
     <div className="space-y-4">

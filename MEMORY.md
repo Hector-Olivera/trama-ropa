@@ -45,6 +45,10 @@ cambia, agregar una nueva con fecha. `AGENTS.md` tiene las reglas de trabajo; ac
   **una sola vez** y navega clickeando: montar el panel entero varias veces en el mismo
   jsdom cuelga el worker (visto en Windows), y un montaje tarda ~6s, por eso el test
   lleva timeout propio (20s).
+- **2026-10-15** — **Fase C, C4**: los paneles dejan de definir su propio `setX`; usan
+  `useSection(update, 'hero')` y `useSectionField(update, 'contact', 'whatsapp')`. Los
+  spreads genéricos necesitaron castear a `object` (TS no permite spread de un tipo
+  genérico).
 
 ## Backend: decisión pendiente (Supabase vs propio) — evaluar en Fase D
 
@@ -87,7 +91,10 @@ cambia, agregar una nueva con fecha. `AGENTS.md` tiene las reglas de trabajo; ac
     (`/admin/marca`, `/admin/inicio`, …, `/admin/seguridad`) con `NavLink` y `<Outlet>`
     en vez de tabs con `useState`. El redirect de `/admin` y de rutas desconocidas va a
     la primera sección. Test de navegación en `src/admin/AdminApp.test.tsx`.
-  - **C4** — helper genérico de sección en los paneles.
+  - **C4 (hecha)** — helper genérico de sección: `useSection` /
+    `useSectionField` en `src/admin/panels/useSection.ts` reemplazan el `setX` repetido
+    de cada panel y sus spreads anidados (`contact.whatsapp`, `hero.primary`, `nav.cta`,
+    …). Test en `src/admin/panels/useSection.test.ts`.
   - **C5** — resiliencia: error boundaries por sección / 404 real.
 - **Fase D** — Backend: decidir Supabase vs propio, esquema de contenido + storage de
   imágenes + auth real; swap del seam.

@@ -1,11 +1,11 @@
 import { RepeatableList } from '../RepeatableList'
 import { SectionCard, TextField } from '../fields'
 import { newId } from '../../lib/id'
+import { useSection } from './useSection'
 import type { PanelProps } from './types'
 
 export function FooterPanel({ draft, update }: PanelProps) {
-  const setFooter = (patch: Partial<(typeof draft)['footer']>) =>
-    update((d) => ({ ...d, footer: { ...d.footer, ...patch } }))
+  const setFooter = useSection(update, 'footer')
 
   return (
     <div className="space-y-4">

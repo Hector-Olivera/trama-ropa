@@ -2,14 +2,13 @@ import { ImageField } from '../ImageField'
 import { RepeatableList } from '../RepeatableList'
 import { SectionCard, TextField } from '../fields'
 import { newId } from '../../lib/id'
+import { useSection, useSectionField } from './useSection'
 import type { PanelProps } from './types'
 
 export function BrandNavPanel({ draft, update }: PanelProps) {
-  const setBrand = (patch: Partial<(typeof draft)['brand']>) =>
-    update((d) => ({ ...d, brand: { ...d.brand, ...patch } }))
-
-  const setNav = (patch: Partial<(typeof draft)['nav']>) =>
-    update((d) => ({ ...d, nav: { ...d.nav, ...patch } }))
+  const setBrand = useSection(update, 'brand')
+  const setNav = useSection(update, 'nav')
+  const setNavCta = useSectionField(update, 'nav', 'cta')
 
   const preview = draft.brand.mark
 
@@ -58,12 +57,12 @@ export function BrandNavPanel({ draft, update }: PanelProps) {
         <TextField
           label="Texto"
           value={draft.nav.cta.label}
-          onChange={(label) => setNav({ cta: { ...draft.nav.cta, label } })}
+          onChange={(label) => setNavCta({ label })}
         />
         <TextField
           label="Destino"
           value={draft.nav.cta.href}
-          onChange={(href) => setNav({ cta: { ...draft.nav.cta, href } })}
+          onChange={(href) => setNavCta({ href })}
         />
       </SectionCard>
     </div>

@@ -3,11 +3,11 @@ import { RepeatableList } from '../RepeatableList'
 import { SectionCard, TextAreaField, TextField } from '../fields'
 import { RichTitleField } from '../RichTitleField'
 import { newId } from '../../lib/id'
+import { useSection } from './useSection'
 import type { PanelProps } from './types'
 
 export function HowItWorksPanel({ draft, update }: PanelProps) {
-  const setHow = (patch: Partial<(typeof draft)['howItWorks']>) =>
-    update((d) => ({ ...d, howItWorks: { ...d.howItWorks, ...patch } }))
+  const setHow = useSection(update, 'howItWorks')
 
   return (
     <div className="space-y-4">

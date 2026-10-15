@@ -2,11 +2,13 @@ import { ImageListField } from '../ImageField'
 import { RepeatableList } from '../RepeatableList'
 import { CheckboxField, SectionCard, TextAreaField, TextField } from '../fields'
 import { newId } from '../../lib/id'
+import { useSection, useSectionField } from './useSection'
 import type { PanelProps } from './types'
 
 export function HeroPanel({ draft, update }: PanelProps) {
-  const setHero = (patch: Partial<(typeof draft)['hero']>) =>
-    update((d) => ({ ...d, hero: { ...d.hero, ...patch } }))
+  const setHero = useSection(update, 'hero')
+  const setPrimary = useSectionField(update, 'hero', 'primary')
+  const setSecondary = useSectionField(update, 'hero', 'secondary')
 
   return (
     <div className="space-y-4">
@@ -50,22 +52,22 @@ export function HeroPanel({ draft, update }: PanelProps) {
         <TextField
           label="Botón principal"
           value={draft.hero.primary.label}
-          onChange={(label) => setHero({ primary: { ...draft.hero.primary, label } })}
+          onChange={(label) => setPrimary({ label })}
         />
         <TextField
           label="Destino del principal"
           value={draft.hero.primary.href}
-          onChange={(href) => setHero({ primary: { ...draft.hero.primary, href } })}
+          onChange={(href) => setPrimary({ href })}
         />
         <TextField
           label="Botón secundario"
           value={draft.hero.secondary.label}
-          onChange={(label) => setHero({ secondary: { ...draft.hero.secondary, label } })}
+          onChange={(label) => setSecondary({ label })}
         />
         <TextField
           label="Destino del secundario"
           value={draft.hero.secondary.href}
-          onChange={(href) => setHero({ secondary: { ...draft.hero.secondary, href } })}
+          onChange={(href) => setSecondary({ href })}
         />
       </SectionCard>
 

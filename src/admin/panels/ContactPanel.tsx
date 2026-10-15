@@ -1,10 +1,12 @@
 import { SectionCard, TextAreaField, TextField } from '../fields'
 import { RichTitleField } from '../RichTitleField'
+import { useSection, useSectionField } from './useSection'
 import type { PanelProps } from './types'
 
 export function ContactPanel({ draft, update }: PanelProps) {
-  const setContact = (patch: Partial<(typeof draft)['contact']>) =>
-    update((d) => ({ ...d, contact: { ...d.contact, ...patch } }))
+  const setContact = useSection(update, 'contact')
+  const setWhatsapp = useSectionField(update, 'contact', 'whatsapp')
+  const setEmail = useSectionField(update, 'contact', 'email')
 
   return (
     <div className="space-y-4">
@@ -30,17 +32,17 @@ export function ContactPanel({ draft, update }: PanelProps) {
         <TextField
           label="Etiqueta"
           value={draft.contact.whatsapp.label}
-          onChange={(label) => setContact({ whatsapp: { ...draft.contact.whatsapp, label } })}
+          onChange={(label) => setWhatsapp({ label })}
         />
         <TextField
           label="Número visible"
           value={draft.contact.whatsapp.display}
-          onChange={(display) => setContact({ whatsapp: { ...draft.contact.whatsapp, display } })}
+          onChange={(display) => setWhatsapp({ display })}
         />
         <TextField
           label="Link"
           value={draft.contact.whatsapp.href}
-          onChange={(href) => setContact({ whatsapp: { ...draft.contact.whatsapp, href } })}
+          onChange={(href) => setWhatsapp({ href })}
           hint="Ej: https://wa.me/5491123456789"
         />
       </SectionCard>
@@ -49,17 +51,17 @@ export function ContactPanel({ draft, update }: PanelProps) {
         <TextField
           label="Etiqueta"
           value={draft.contact.email.label}
-          onChange={(label) => setContact({ email: { ...draft.contact.email, label } })}
+          onChange={(label) => setEmail({ label })}
         />
         <TextField
           label="Dirección visible"
           value={draft.contact.email.value}
-          onChange={(value) => setContact({ email: { ...draft.contact.email, value } })}
+          onChange={(value) => setEmail({ value })}
         />
         <TextField
           label="Link"
           value={draft.contact.email.href}
-          onChange={(href) => setContact({ email: { ...draft.contact.email, href } })}
+          onChange={(href) => setEmail({ href })}
           hint="Ej: mailto:hola@tramaropa.com.ar"
         />
       </SectionCard>

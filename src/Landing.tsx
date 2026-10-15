@@ -1,11 +1,11 @@
 import { lazy, Suspense } from 'react'
 import { Catalog } from './components/Catalog'
 import { Contact } from './components/Contact'
-import { ErrorBoundary } from './components/ErrorBoundary'
 import { Footer } from './components/Footer'
 import { Hero } from './components/Hero'
 import { HowItWorks } from './components/HowItWorks'
 import { Nav } from './components/Nav'
+import { SectionBoundary } from './components/SectionBoundary'
 
 // Konva pesa ~360 kB. Va en su propio chunk para que la landing no lo pague.
 const EditorSection = lazy(() =>
@@ -26,19 +26,31 @@ function EditorFallback() {
 export function Landing() {
   return (
     <>
-      <Nav />
+      <SectionBoundary>
+        <Nav />
+      </SectionBoundary>
       <main>
-        <Hero />
-        <ErrorBoundary fallback={<EditorFallback />}>
+        <SectionBoundary id="inicio">
+          <Hero />
+        </SectionBoundary>
+        <SectionBoundary id="editor">
           <Suspense fallback={<EditorFallback />}>
             <EditorSection />
           </Suspense>
-        </ErrorBoundary>
-        <Catalog />
-        <HowItWorks />
-        <Contact />
+        </SectionBoundary>
+        <SectionBoundary id="catalogo">
+          <Catalog />
+        </SectionBoundary>
+        <SectionBoundary>
+          <HowItWorks />
+        </SectionBoundary>
+        <SectionBoundary id="contacto">
+          <Contact />
+        </SectionBoundary>
       </main>
-      <Footer />
+      <SectionBoundary>
+        <Footer />
+      </SectionBoundary>
     </>
   )
 }

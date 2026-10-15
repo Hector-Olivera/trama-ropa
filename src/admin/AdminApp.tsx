@@ -6,9 +6,11 @@ import {
   Outlet,
   Route,
   Routes,
+  useLocation,
   useOutletContext,
 } from 'react-router-dom'
 import { Login } from './Login'
+import { AdminNotFound } from './AdminNotFound'
 import { useAuth } from './useAuth'
 import { useDraft } from './useDraft'
 import { BrandNavPanel } from './panels/BrandNavPanel'
@@ -19,6 +21,7 @@ import { FooterPanel } from './panels/FooterPanel'
 import { HeroPanel } from './panels/HeroPanel'
 import { HowItWorksPanel } from './panels/HowItWorksPanel'
 import type { PanelProps } from './panels/types'
+import { SectionBoundary } from '../components/SectionBoundary'
 
 type PanelEntry = {
   slug: string
@@ -65,7 +68,10 @@ export function AdminApp() {
           />
         ))}
         <Route path="seguridad" element={<SecurityPanel />} />
-        <Route path="*" element={<Navigate to={DEFAULT_SLUG} replace />} />
+        <Route
+          path="*"
+          element={<AdminNotFound to={`/admin/${DEFAULT_SLUG}`} />}
+        />
       </Route>
     </Routes>
   )
@@ -85,6 +91,7 @@ function Dashboard({
 }) {
   const { draft, dirty, update, commit, discard, resetAll } = useDraft()
   const [saved, setSaved] = useState(false)
+  const location = useLocation()
 
   const handleSave = () => {
     commit()
@@ -169,7 +176,9 @@ function Dashboard({
       </header>
 
       <main className="mx-auto max-w-5xl px-4 py-6">
-        <Outlet context={context} />
+        <SectionBoundary key={location.pathname}>
+          <Outlet context={context} />
+        </SectionBoundary>
       </main>
     </div>
   )

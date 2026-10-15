@@ -11,7 +11,7 @@ cambia, agregar una nueva con fecha. `AGENTS.md` tiene las reglas de trabajo; ac
 - Assets optimizados con `scripts/optimize-assets.mjs` (originales 60 MB → ~5 MB en
   `public/`). Los originales viven fuera del repo (carpeta `Estampados/`); **no
   modificar**.
-- Sin backend. Con tests (17) y CI; repo en GitHub con `main`/`develop`.
+- Sin backend. Con tests (23) y CI; repo en GitHub con `main`/`develop`.
 
 ## Decisiones
 
@@ -49,6 +49,14 @@ cambia, agregar una nueva con fecha. `AGENTS.md` tiene las reglas de trabajo; ac
   `useSection(update, 'hero')` y `useSectionField(update, 'contact', 'whatsapp')`. Los
   spreads genéricos necesitaron castear a `object` (TS no permite spread de un tipo
   genérico).
+- **2026-10-15** — **Fase C, C5**: `SectionBoundary` (fallback compacto + ancla) envuelve
+  cada sección de la landing y el `<Outlet>` del panel, así una sección rota no tira
+  abajo al resto. El editor lazy pasó de `ErrorBoundary` a `SectionBoundary id="editor"`.
+  En admin, una ruta desconocida ya **no** redirige en silencio: renderiza `AdminNotFound`
+  (404 real). El boundary del panel va con `key={pathname}` para limpiar el error al
+  navegar. Tests: `src/components/SectionBoundary.test.tsx` y el caso 404 dentro del
+  montaje único de `AdminApp.test.tsx` (un `JumpButton` con `useNavigate` navega a
+  `/admin/panel-fantasma` sin montar el panel de nuevo).
 
 ## Backend: decisión pendiente (Supabase vs propio) — evaluar en Fase D
 
@@ -66,11 +74,9 @@ cambia, agregar una nueva con fecha. `AGENTS.md` tiene las reglas de trabajo; ac
 ## Limitaciones / deuda técnica conocida
 
 - **Auth de admin solo en cliente** (no es seguridad real).
-- **Sin tests** (falta Vitest; prioridad Fase B). Nada cubre `mergeContent`, `useEditor`
-  /`useHistory` ni `exportImage`.
-- **Sin CI** que imponga lint + typecheck + build.
 - **Blobs huérfanos**: al reemplazar/quitar una imagen no se borra el blob viejo de
-  IndexedDB (fuga gradual). Revisar en Fase C.
+  IndexedDB (fuga gradual). Quedó pendiente (no se hizo en Fase C); ojo con los blobs que
+  referencian diseños guardados del editor antes de borrar nada.
 - Contenido guardado antes de los ids: `loadContent` los regenera en cada carga hasta
   que se guarda una vez (después persisten). Aceptable por ahora.
 - `SiteContent.version` existe pero el merge todavía no lo usa para migraciones.
@@ -95,7 +101,8 @@ cambia, agregar una nueva con fecha. `AGENTS.md` tiene las reglas de trabajo; ac
     `useSectionField` en `src/admin/panels/useSection.ts` reemplazan el `setX` repetido
     de cada panel y sus spreads anidados (`contact.whatsapp`, `hero.primary`, `nav.cta`,
     …). Test en `src/admin/panels/useSection.test.ts`.
-  - **C5** — resiliencia: error boundaries por sección / 404 real.
+  - **C5 (hecha)** — resiliencia: `SectionBoundary` por sección en la landing y en el
+    panel + 404 real en admin (`AdminNotFound`).
 - **Fase D** — Backend: decidir Supabase vs propio, esquema de contenido + storage de
   imágenes + auth real; swap del seam.
 

@@ -11,7 +11,7 @@ cambia, agregar una nueva con fecha. `AGENTS.md` tiene las reglas de trabajo; ac
 - Assets optimizados con `scripts/optimize-assets.mjs` (originales 60 MB → ~5 MB en
   `public/`). Los originales viven fuera del repo (carpeta `Estampados/`); **no
   modificar**.
-- Sin backend, sin tests, sin CI. Repo git local (sin remoto).
+- Sin backend. Con tests (17) y CI; repo en GitHub con `main`/`develop`.
 
 ## Decisiones
 
@@ -32,6 +32,13 @@ cambia, agregar una nueva con fecha. `AGENTS.md` tiene las reglas de trabajo; ac
   features en `feature/<nombre>`, PRs a `develop` (agente no crea PRs, solo
   prepara ramas). `main` recibe merges desde `develop` en liberaciones.
   Repo remoto `origin` apuntando a `https://github.com/Hector-Olivera/trama-ropa.git`.
+- **2026-10-15** — **Fase C, C1**: claves/prefix de storage centralizados en
+  `src/lib/storage-keys.ts` (`STORAGE_KEYS` + `BLOB_PREFIX`).
+- **2026-10-15** — **Fase C, C2**: los items de las listas editables llevan `id`
+  estable (nav, hero, cómo funciona, footer) y `RepeatableList` lo usa como key.
+  `newId()` vive en `src/lib/id.ts`; `loadContent` migra contenido viejo sin ids.
+- **2026-10-15** — Vitest con `pool: 'threads'`: el pool de forks por defecto
+  timeoutea al iniciar workers en Windows; threads corre los tests sin problema.
 
 ## Backend: decisión pendiente (Supabase vs propio) — evaluar en Fase D
 
@@ -54,9 +61,8 @@ cambia, agregar una nueva con fecha. `AGENTS.md` tiene las reglas de trabajo; ac
 - **Sin CI** que imponga lint + typecheck + build.
 - **Blobs huérfanos**: al reemplazar/quitar una imagen no se borra el blob viejo de
   IndexedDB (fuga gradual). Revisar en Fase C.
-- `RepeatableList` usa `key={index}` → posible bug sutil al reordenar. Fase C.
-- Claves/prefix de storage (`trama:content`, `trama:blob:`, `trama:admin:*`) dispersas;
-  conviene centralizarlas. Fase C.
+- Contenido guardado antes de los ids: `loadContent` los regenera en cada carga hasta
+  que se guarda una vez (después persisten). Aceptable por ahora.
 - `SiteContent.version` existe pero el merge todavía no lo usa para migraciones.
 - Deploy: en hosting estático hace falta **rewrite SPA** (`/admin` da 404 si no).
 
@@ -64,11 +70,16 @@ cambia, agregar una nueva con fecha. `AGENTS.md` tiene las reglas de trabajo; ac
 
 - **Fase A (hecha)** — Higiene base: git local + `.gitignore` + commit inicial,
   documentación (README/AGENTS/MEMORY), `ErrorBoundary` y ruta `NotFound`.
-- **Fase B (en curso)** — Calidad: **Vitest + tests + CI hechos**. Falta: crear el
-  **repo en GitHub** y pushear (bloqueado: no hay `gh` instalado; ver nota).
-- **Fase C** — Refactors chicos: claves de storage centralizadas, `RepeatableList` con
-  id estable, admin por rutas (`/admin/hero`, …) en vez de tabs con `useState`, helper
-  genérico de sección en los paneles, error boundaries por sección.
+- **Fase B (hecha)** — Calidad: Vitest + tests (17) + CI, repo en GitHub
+  (`Hector-Olivera/trama-ropa`) y `main`/`develop` pusheados.
+- **Fase C (en curso)** — Refactors chicos:
+  - **C1 (hecha)** — claves de storage centralizadas en `src/lib/storage-keys.ts`.
+  - **C2 (hecha)** — `RepeatableList` con `id` estable: id en los items de nav, hero,
+    cómo funciona y footer + migración en `loadContent`; `create()` genera id con
+    `src/lib/id.ts`.
+  - **C3** — admin por rutas (`/admin/hero`, …) en vez de tabs con `useState`.
+  - **C4** — helper genérico de sección en los paneles.
+  - **C5** — resiliencia: error boundaries por sección / 404 real.
 - **Fase D** — Backend: decidir Supabase vs propio, esquema de contenido + storage de
   imágenes + auth real; swap del seam.
 

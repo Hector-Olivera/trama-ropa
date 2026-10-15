@@ -1,6 +1,7 @@
 import { ImageField } from '../ImageField'
 import { RepeatableList } from '../RepeatableList'
 import { SectionCard, TextField } from '../fields'
+import { newId } from '../../lib/id'
 import type { PanelProps } from './types'
 
 export function BrandNavPanel({ draft, update }: PanelProps) {
@@ -32,7 +33,7 @@ export function BrandNavPanel({ draft, update }: PanelProps) {
         <RepeatableList
           items={draft.nav.links}
           onChange={(links) => setNav({ links })}
-          create={() => ({ href: '#', label: 'Nuevo link' })}
+          create={() => ({ id: newId(), href: '#', label: 'Nuevo link' })}
           label={(item) => item.label || 'Link'}
           addLabel="Agregar link"
           render={(item, updateItem) => (

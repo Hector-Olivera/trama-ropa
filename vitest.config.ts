@@ -6,6 +6,7 @@ export default defineConfig({
   test: {
     environment: 'node',
     include: ['src/**/*.test.{ts,tsx}'],
+    pool: 'threads',
     clearMocks: true,
     restoreMocks: true,
   },

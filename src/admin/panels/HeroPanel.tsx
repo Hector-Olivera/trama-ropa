@@ -1,6 +1,7 @@
 import { ImageListField } from '../ImageField'
 import { RepeatableList } from '../RepeatableList'
 import { CheckboxField, SectionCard, TextAreaField, TextField } from '../fields'
+import { newId } from '../../lib/id'
 import type { PanelProps } from './types'
 
 export function HeroPanel({ draft, update }: PanelProps) {
@@ -26,10 +27,10 @@ export function HeroPanel({ draft, update }: PanelProps) {
         title="Título"
         description="Una entrada por línea. Marcá las que van resaltadas en cyan."
       >
-        <RepeatableList<{ text: string; highlight?: boolean }>
+        <RepeatableList
           items={draft.hero.titleLines}
           onChange={(titleLines) => setHero({ titleLines })}
-          create={() => ({ text: 'Nueva línea' })}
+          create={() => ({ id: newId(), text: 'Nueva línea' })}
           label={(item) => item.text || 'Línea'}
           addLabel="Agregar línea"
           render={(item, updateItem) => (
@@ -72,7 +73,7 @@ export function HeroPanel({ draft, update }: PanelProps) {
         <RepeatableList
           items={draft.hero.stats}
           onChange={(stats) => setHero({ stats })}
-          create={() => ({ value: '0', label: 'Nueva' })}
+          create={() => ({ id: newId(), value: '0', label: 'Nueva' })}
           label={(item) => `${item.value} · ${item.label}`}
           addLabel="Agregar estadística"
           render={(item, updateItem) => (

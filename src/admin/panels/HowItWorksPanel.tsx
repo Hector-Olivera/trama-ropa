@@ -2,6 +2,7 @@ import { ImageListField } from '../ImageField'
 import { RepeatableList } from '../RepeatableList'
 import { SectionCard, TextAreaField, TextField } from '../fields'
 import { RichTitleField } from '../RichTitleField'
+import { newId } from '../../lib/id'
 import type { PanelProps } from './types'
 
 export function HowItWorksPanel({ draft, update }: PanelProps) {
@@ -27,7 +28,7 @@ export function HowItWorksPanel({ draft, update }: PanelProps) {
         <RepeatableList
           items={draft.howItWorks.steps}
           onChange={(steps) => setHow({ steps })}
-          create={() => ({ title: 'Nuevo paso', body: 'Descripción del paso.' })}
+          create={() => ({ id: newId(), title: 'Nuevo paso', body: 'Descripción del paso.' })}
           label={(item) => item.title || 'Paso'}
           addLabel="Agregar paso"
           render={(item, updateItem) => (
@@ -43,7 +44,7 @@ export function HowItWorksPanel({ draft, update }: PanelProps) {
         <RepeatableList
           items={draft.howItWorks.features}
           onChange={(features) => setHow({ features })}
-          create={() => ({ title: 'Nuevo beneficio', body: 'Descripción.' })}
+          create={() => ({ id: newId(), title: 'Nuevo beneficio', body: 'Descripción.' })}
           label={(item) => item.title || 'Beneficio'}
           addLabel="Agregar beneficio"
           render={(item, updateItem) => (

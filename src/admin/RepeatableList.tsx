@@ -1,9 +1,11 @@
 import type { ReactNode } from 'react'
 
-type Props<T> = {
+type Item = { id: string }
+
+type Props<T extends Item> = {
   items: T[]
   onChange: (items: T[]) => void
-  create: () => T
+  create: () => NoInfer<T>
   render: (item: T, update: (patch: Partial<T>) => void, index: number) => ReactNode
   label: (item: T, index: number) => string
   addLabel?: string
@@ -12,10 +14,13 @@ type Props<T> = {
 
 /**
  * Editor de listas con agregar / quitar / reordenar. Se usa para stats, pasos,
- * features, grupos, items del catalogo, links y prendas, que son todos arrays
- * de objetos planos.
+ * features, grupos, items del catalogo, links y prendas.
+ *
+ * Los items deben llevar `id` estable: es la key de React (evita que al
+ * reordenar se pierda foco o estado de un input) y el identificador que
+ * usaremos como PK al migrar a backend.
  */
-export function RepeatableList<T>({
+export function RepeatableList<T extends Item>({
   items,
   onChange,
   create,
@@ -44,7 +49,7 @@ export function RepeatableList<T>({
       )}
 
       {items.map((item, index) => (
-        <div key={index} className="rounded border border-brand-line bg-brand-black/40 p-3">
+        <div key={item.id} className="rounded border border-brand-line bg-brand-black/40 p-3">
           <div className="mb-2 flex items-center gap-2">
             <span className="truncate text-[11px] font-semibold text-brand-muted">
               {label(item, index)}

@@ -10,6 +10,7 @@
  * `site_content` (una fila, jsonb) y las imagenes al bucket `media`.
  */
 import { STORAGE_KEYS } from '../lib/storage-keys'
+import { newId } from '../lib/id'
 import { deleteBlobRef, isBlobRef, putLogoBlob, resolveDrawableSrc } from '../lib/storage'
 import { DEFAULT_CONTENT } from './defaults'
 import type { MediaRef, SiteContent } from './types'
@@ -38,11 +39,39 @@ function mergeContent<T>(base: T, override: unknown): T {
   return result as T
 }
 
+/**
+ * Asegura que cada item de las listas editables tenga un `id` estable. Es una
+ * migracion para contenido guardado antes de que existieran los ids (y para
+ * cualquier item que llegue sin ellos): React los usa como key y el backend
+ * los usara como PK.
+ */
+function withItemIds<T extends { id?: string }>(items: T[]): T[] {
+  return items.map((item) => (item.id ? item : { ...item, id: newId() }))
+}
+
+function normalizeContent(content: SiteContent): SiteContent {
+  return {
+    ...content,
+    nav: { ...content.nav, links: withItemIds(content.nav.links) },
+    hero: {
+      ...content.hero,
+      titleLines: withItemIds(content.hero.titleLines),
+      stats: withItemIds(content.hero.stats),
+    },
+    howItWorks: {
+      ...content.howItWorks,
+      steps: withItemIds(content.howItWorks.steps),
+      features: withItemIds(content.howItWorks.features),
+    },
+    footer: { ...content.footer, links: withItemIds(content.footer.links) },
+  }
+}
+
 export function loadContent(): SiteContent {
   try {
     const raw = localStorage.getItem(CONTENT_KEY)
     if (!raw) return DEFAULT_CONTENT
-    return mergeContent(DEFAULT_CONTENT, JSON.parse(raw))
+    return normalizeContent(mergeContent(DEFAULT_CONTENT, JSON.parse(raw)))
   } catch (error) {
     console.warn('No se pudo leer el contenido, uso los defaults:', error)
     return DEFAULT_CONTENT

@@ -31,6 +31,22 @@ describe('loadContent', () => {
     expect(loaded.nav.cta).toEqual(DEFAULT_CONTENT.nav.cta)
   })
 
+  it('asigna ids estables a items guardados antes de que existieran', () => {
+    localStorage.setItem(
+      'trama:content',
+      JSON.stringify({
+        nav: { links: [{ href: '#uno', label: 'Uno' }] },
+        footer: { links: [{ href: '#dos', label: 'Dos' }] },
+      }),
+    )
+
+    const loaded = loadContent()
+
+    expect(loaded.nav.links[0].id).toBeTruthy()
+    expect(loaded.nav.links[0]).toMatchObject({ href: '#uno', label: 'Uno' })
+    expect(loaded.footer.links[0].id).toBeTruthy()
+  })
+
   it('cae a los defaults si el JSON guardado esta corrupto', () => {
     localStorage.setItem('trama:content', '{no es json')
 

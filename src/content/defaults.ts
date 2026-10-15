@@ -40,10 +40,10 @@ export const DEFAULT_CONTENT: SiteContent = {
 
   nav: {
     links: [
-      { href: '#editor', label: 'Editor' },
-      { href: '#catalogo', label: 'Catálogo' },
-      { href: '#como-funciona', label: 'Cómo funciona' },
-      { href: '#contacto', label: 'Contacto' },
+      { id: 'nav-editor', href: '#editor', label: 'Editor' },
+      { id: 'nav-catalogo', href: '#catalogo', label: 'Catálogo' },
+      { id: 'nav-como-funciona', href: '#como-funciona', label: 'Cómo funciona' },
+      { id: 'nav-contacto', href: '#contacto', label: 'Contacto' },
     ],
     cta: { label: 'Personalizar', href: '#editor' },
   },
@@ -51,18 +51,18 @@ export const DEFAULT_CONTENT: SiteContent = {
   hero: {
     eyebrow: 'Ropa deportiva personalizada',
     titleLines: [
-      { text: 'Tu Logo' },
-      { text: 'Tu Marca', highlight: true },
-      { text: 'Tu Ropa Deportiva' },
+      { id: 'hero-line-1', text: 'Tu Logo' },
+      { id: 'hero-line-2', text: 'Tu Marca', highlight: true },
+      { id: 'hero-line-3', text: 'Tu Ropa Deportiva' },
     ],
     subtitle:
       'Personalizá remeras, polares y ropa deportiva con tu logo. Elegí la prenda, subí tu diseño y descargalo listo para estampar. Sin designing, sin vueltas.',
     primary: { label: 'Probar el editor', href: '#editor' },
     secondary: { label: 'Consultar por mi equipo', href: '#contacto' },
     stats: [
-      { value: '5', label: 'unidades mínimo' },
-      { value: '-15%', label: 'a mayor cantidad' },
-      { value: '24h', label: 'para llevar tu archivo' },
+      { id: 'hero-stat-1', value: '5', label: 'unidades mínimo' },
+      { id: 'hero-stat-2', value: '-15%', label: 'a mayor cantidad' },
+      { id: 'hero-stat-3', value: '24h', label: 'para llevar tu archivo' },
     ],
     images: [
       gallerySrc('calza-oxford', 0),
@@ -92,22 +92,37 @@ export const DEFAULT_CONTENT: SiteContent = {
     title: { before: 'Tres pasos y', highlight: 'listo' },
     steps: [
       {
+        id: 'step-1',
         title: 'Elegís la prenda',
         body: 'Remera, polar, campera o calza. Ves la prenda sobre la que vas a estampar.',
       },
       {
+        id: 'step-2',
         title: 'Subís tu logo',
         body: 'PNG, JPG o WEBP. Lo ajustás de tamaño, posición, rotación y color al toque.',
       },
       {
+        id: 'step-3',
         title: 'Lo descargás',
         body: 'PNG en alta resolución o JPG con fondo blanco. Se lo mandás a quien te estampa.',
       },
     ],
     features: [
-      { title: 'Calidad garantizada', body: 'Bordado y sublimación sobre prendas que bancan el lavado.' },
-      { title: 'Diseños personalizados', body: 'Tu logo, tu identidad. Sin mínimos de tirada.' },
-      { title: 'Envíos a todo el país', body: 'Retiro en persona o te lo mandamos donde estés.' },
+      {
+        id: 'feature-1',
+        title: 'Calidad garantizada',
+        body: 'Bordado y sublimación sobre prendas que bancan el lavado.',
+      },
+      {
+        id: 'feature-2',
+        title: 'Diseños personalizados',
+        body: 'Tu logo, tu identidad. Sin mínimos de tirada.',
+      },
+      {
+        id: 'feature-3',
+        title: 'Envíos a todo el país',
+        body: 'Retiro en persona o te lo mandamos donde estés.',
+      },
     ],
     images: [
       gallerySrc('con-tiras-azulgris', 0),
@@ -142,9 +157,9 @@ export const DEFAULT_CONTENT: SiteContent = {
   footer: {
     tagline: 'Tu Logo · Tu Marca · Tu Ropa Deportiva',
     links: [
-      { href: '#inicio', label: 'Inicio' },
-      { href: '#editor', label: 'Editor' },
-      { href: '#contacto', label: 'Contacto' },
+      { id: 'footer-inicio', href: '#inicio', label: 'Inicio' },
+      { id: 'footer-editor', href: '#editor', label: 'Editor' },
+      { id: 'footer-contacto', href: '#contacto', label: 'Contacto' },
     ],
   },
 }

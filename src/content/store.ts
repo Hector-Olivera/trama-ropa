@@ -9,11 +9,12 @@
  * ContentProvider y el dashboard no se tocan. El contenido pasaria a una tabla
  * `site_content` (una fila, jsonb) y las imagenes al bucket `media`.
  */
+import { STORAGE_KEYS } from '../lib/storage-keys'
 import { deleteBlobRef, isBlobRef, putLogoBlob, resolveDrawableSrc } from '../lib/storage'
 import { DEFAULT_CONTENT } from './defaults'
 import type { MediaRef, SiteContent } from './types'
 
-const CONTENT_KEY = 'trama:content'
+const CONTENT_KEY = STORAGE_KEYS.content
 
 function isPlainObject(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value)

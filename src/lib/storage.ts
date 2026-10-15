@@ -12,9 +12,9 @@
  */
 import { del, get, set } from 'idb-keyval'
 import type { Design } from '../types'
+import { BLOB_PREFIX } from './storage-keys'
 
 const DESIGNS_KEY = 'trama:designs'
-const BLOB_PREFIX = 'trama:blob:'
 
 function readDesigns(): Design[] {
   try {

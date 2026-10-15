@@ -1,4 +1,5 @@
 import { useCallback, useState } from 'react'
+import { STORAGE_KEYS } from '../lib/storage-keys'
 
 /**
  * Gate de admin LOCAL (sin backend). Guarda el hash SHA-256 de la contraseña y
@@ -9,8 +10,8 @@ import { useCallback, useState } from 'react'
  * migración (misma interfaz: isAuthed / login / logout).
  */
 
-const HASH_KEY = 'trama:admin:hash'
-const SESSION_KEY = 'trama:admin:session'
+const HASH_KEY = STORAGE_KEYS.adminHash
+const SESSION_KEY = STORAGE_KEYS.adminSession
 
 /** Contraseña inicial hasta que se cambie desde el panel. */
 export const DEFAULT_PASSWORD = 'trama'

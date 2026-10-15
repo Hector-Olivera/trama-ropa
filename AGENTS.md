@@ -35,8 +35,12 @@ npm run preview    # sirve dist, http://localhost:4173
 - La terminal del usuario es Git Bash, donde `git` sí funciona con normalidad.
 - No commitear salvo que el usuario lo pida explícitamente.
 - Antes de commitear: revisar `status` y `diff`, y no incluir secretos.
+- **Flujo de trabajo (branching)**:
+  - Rama estable: `main` (solo recibirá merges desde `develop`).
+  - Rama de integración: `develop`. Todas las features nacen desde `develop`.
+  - Para cada feature: crear rama `feature/<descripcion-corta>` desde `develop`, trabajar, hacer commits atómicos, pushear la rama y proporcionar al usuario la descripción/URL para abrir un PR a `develop`.
+  - Merge a `main` únicamente cuando corresponda (liberación/versionado). El propio agente **no** hace merges ni crea PRs en GitHub; solo prepara, commitea y pushea las ramas de feature, dejando al usuario el PR.
 - Rama principal: `main`. CI en GitHub Actions (`.github/workflows/ci.yml`).
-  Sin remoto todavía: al crearlo, `git remote add origin <url>` y `git push -u origin main`.
 
 ## Reglas de código
 

@@ -28,10 +28,10 @@ cambia, agregar una nueva con fecha. `AGENTS.md` tiene las reglas de trabajo; ac
   `src/**/*.test.ts(x)`. Se crea `tsconfig.test.json` (extiende el app + tipos de Node)
   para que `tsc -b` typechequee tests sin filtrar APIs de Node al código de la app.
   Se agrega CI en `.github/workflows/ci.yml` (lint + typecheck + test + build en Node 24).
-- **2026-10-14** — **GitHub CLI (`gh`) no está instalado** y no hay remoto. Para subir
-  el repo hay que: instalar `gh` (y `gh auth login`), o crear el repo vacío en
-  github.com a mano y pasarnos la URL para `git remote add origin ... && git push -u`.
-  Mientras tanto, los commits locales en `main` no se pierden.
+- **2026-10-14** — Flujo de trabajo establecido: `develop` como rama de integración,
+  features en `feature/<nombre>`, PRs a `develop` (agente no crea PRs, solo
+  prepara ramas). `main` recibe merges desde `develop` en liberaciones.
+  Repo remoto `origin` apuntando a `https://github.com/Hector-Olivera/trama-ropa.git`.
 
 ## Backend: decisión pendiente (Supabase vs propio) — evaluar en Fase D
 

@@ -39,6 +39,12 @@ cambia, agregar una nueva con fecha. `AGENTS.md` tiene las reglas de trabajo; ac
   `newId()` vive en `src/lib/id.ts`; `loadContent` migra contenido viejo sin ids.
 - **2026-10-15** — Vitest con `pool: 'threads'`: el pool de forks por defecto
   timeoutea al iniciar workers en Windows; threads corre los tests sin problema.
+- **2026-10-15** — **Fase C, C3**: el panel pasa de tabs con `useState` a rutas
+  anidadas (`/admin/<sección>` + `/admin/seguridad`) con `NavLink` y `<Outlet>`; la
+  sección activa ahora es una URL compartible. El test de `AdminApp` monta el panel
+  **una sola vez** y navega clickeando: montar el panel entero varias veces en el mismo
+  jsdom cuelga el worker (visto en Windows), y un montaje tarda ~6s, por eso el test
+  lleva timeout propio (20s).
 
 ## Backend: decisión pendiente (Supabase vs propio) — evaluar en Fase D
 
@@ -77,7 +83,10 @@ cambia, agregar una nueva con fecha. `AGENTS.md` tiene las reglas de trabajo; ac
   - **C2 (hecha)** — `RepeatableList` con `id` estable: id en los items de nav, hero,
     cómo funciona y footer + migración en `loadContent`; `create()` genera id con
     `src/lib/id.ts`.
-  - **C3** — admin por rutas (`/admin/hero`, …) en vez de tabs con `useState`.
+  - **C3 (hecha)** — admin por rutas: `AdminApp` usa rutas anidadas
+    (`/admin/marca`, `/admin/inicio`, …, `/admin/seguridad`) con `NavLink` y `<Outlet>`
+    en vez de tabs con `useState`. El redirect de `/admin` y de rutas desconocidas va a
+    la primera sección. Test de navegación en `src/admin/AdminApp.test.tsx`.
   - **C4** — helper genérico de sección en los paneles.
   - **C5** — resiliencia: error boundaries por sección / 404 real.
 - **Fase D** — Backend: decidir Supabase vs propio, esquema de contenido + storage de

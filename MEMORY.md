@@ -23,6 +23,15 @@ cambia, agregar una nueva con fecha. `AGENTS.md` tiene las reglas de trabajo; ac
   real en la Fase D.
 - **2026-10-14** — Se descartan las "zonas de impresión" del editor: se puede estampar
   en cualquier parte de la prenda. Las prendas base ahora son editables desde el admin.
+- **2026-10-14** — **Fase B**: se suma **Vitest** (entorno `node`; `jsdom` por archivo
+  con docblock) + `jsdom` + `@testing-library/react`. Tests junto al módulo, en
+  `src/**/*.test.ts(x)`. Se crea `tsconfig.test.json` (extiende el app + tipos de Node)
+  para que `tsc -b` typechequee tests sin filtrar APIs de Node al código de la app.
+  Se agrega CI en `.github/workflows/ci.yml` (lint + typecheck + test + build en Node 24).
+- **2026-10-14** — **GitHub CLI (`gh`) no está instalado** y no hay remoto. Para subir
+  el repo hay que: instalar `gh` (y `gh auth login`), o crear el repo vacío en
+  github.com a mano y pasarnos la URL para `git remote add origin ... && git push -u`.
+  Mientras tanto, los commits locales en `main` no se pierden.
 
 ## Backend: decisión pendiente (Supabase vs propio) — evaluar en Fase D
 
@@ -55,11 +64,11 @@ cambia, agregar una nueva con fecha. `AGENTS.md` tiene las reglas de trabajo; ac
 
 - **Fase A (hecha)** — Higiene base: git local + `.gitignore` + commit inicial,
   documentación (README/AGENTS/MEMORY), `ErrorBoundary` y ruta `NotFound`.
-- **Fase B** — Calidad: repo en GitHub + CI (lint/typecheck/build), Vitest + tests,
-  script `npm test`.
+- **Fase B (en curso)** — Calidad: **Vitest + tests + CI hechos**. Falta: crear el
+  **repo en GitHub** y pushear (bloqueado: no hay `gh` instalado; ver nota).
 - **Fase C** — Refactors chicos: claves de storage centralizadas, `RepeatableList` con
   id estable, admin por rutas (`/admin/hero`, …) en vez de tabs con `useState`, helper
-  genérico de sección en los paneles, ruta 404 real / error boundaries por sección.
+  genérico de sección en los paneles, error boundaries por sección.
 - **Fase D** — Backend: decidir Supabase vs propio, esquema de contenido + storage de
   imágenes + auth real; swap del seam.
 

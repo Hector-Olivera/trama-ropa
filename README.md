@@ -28,6 +28,8 @@ npm run dev        # servidor de desarrollo        -> http://localhost:5173
 npm run build      # typecheck (tsc -b) + build prod -> dist/
 npm run preview    # sirve el build                 -> http://localhost:4173
 npm run lint       # ESLint
+npm test           # tests (Vitest, una corrida)
+npm run test:watch # tests en modo watch
 npm run assets     # reprocesa los assets originales a public/
 ```
 

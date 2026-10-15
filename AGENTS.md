@@ -14,14 +14,16 @@ IndexedDB), sin backend todavía.
 
 ```bash
 npm run dev        # dev server, http://localhost:5173
-npx tsc -b         # typecheck
+npx tsc -b         # typecheck (app + node + tests)
 npm run lint       # ESLint
+npm test           # Vitest (una corrida)
+npm run test:watch # Vitest en watch
 npm run build      # tsc -b && vite build
 npm run preview    # sirve dist, http://localhost:4173
 ```
 
-**Antes de dar una tarea por terminada**: `npx tsc -b`, `npm run lint` y
-`npm run build` deben pasar sin errores. Hay que verificar, no asumir.
+**Antes de dar una tarea por terminada**: `npx tsc -b`, `npm run lint`,
+`npm test` y `npm run build` deben pasar sin errores. Hay que verificar, no asumir.
 
 ## Git
 
@@ -33,7 +35,8 @@ npm run preview    # sirve dist, http://localhost:4173
 - La terminal del usuario es Git Bash, donde `git` sí funciona con normalidad.
 - No commitear salvo que el usuario lo pida explícitamente.
 - Antes de commitear: revisar `status` y `diff`, y no incluir secretos.
-- Rama principal: `main`. Sin remoto por ahora (Fase B lo agrega).
+- Rama principal: `main`. CI en GitHub Actions (`.github/workflows/ci.yml`).
+  Sin remoto todavía: al crearlo, `git remote add origin <url>` y `git push -u origin main`.
 
 ## Reglas de código
 
@@ -48,6 +51,17 @@ npm run preview    # sirve dist, http://localhost:4173
   `use`. Sin dependencias nuevas sin evaluar.
 - No romper las reglas de `react-hooks` v7: nada de `setState` síncrono en effects ni
   espejos de estado en refs. Usar lazy init / updater form / estado derivado.
+
+## Tests
+
+- **Vitest** (`vitest.config.ts`, entorno `node` por defecto). Los archivos son
+  `src/**/*.test.ts(x)`. Los que necesitan DOM/localStorage llevan
+  `// @vitest-environment jsdom` como primera línea.
+- Typecheck: los tests viven en `tsconfig.test.json` (extiende el app, agrega
+  tipos de Node) para que `tsc -b` los cubra sin filtrar APIs de Node al código
+  de la app.
+- Cada test nuevo va cerca del módulo que prueba (`store.test.ts` junto a
+  `store.ts`). Probar comportamiento, no implementación.
 
 ## Arquitectura (mapa)
 

@@ -13,6 +13,7 @@
     "assets": "node scripts/optimize-assets.mjs"
   },
   "dependencies": {
+    "@supabase/supabase-js": "^2.118.0",
     "clsx": "^2.1.1",
     "idb-keyval": "^6.3.0",
     "konva": "^10.7.0",

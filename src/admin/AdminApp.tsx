@@ -48,7 +48,15 @@ type DashboardContext = PanelProps & {
 }
 
 export function AdminApp() {
-  const { isAuthed, login, logout, changePassword, hasCustomPassword } = useAuth()
+  const { isAuthed, loading, login, logout, changePassword, hasCustomPassword } = useAuth()
+
+  if (loading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-brand-black">
+        <p className="text-xs font-bold uppercase tracking-widest text-brand-cyan">Cargando...</p>
+      </div>
+    )
+  }
 
   if (!isAuthed) {
     return <Login onSubmit={login} hasCustomPassword={hasCustomPassword} />

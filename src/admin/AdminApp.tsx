@@ -44,7 +44,7 @@ const DEFAULT_SLUG = PANELS[0].slug
 type DashboardContext = PanelProps & {
   onChangePassword: (current: string, next: string) => Promise<boolean>
   onLogout: () => void
-  resetAll: () => void
+  resetAll: () => Promise<void>
 }
 
 export function AdminApp() {
@@ -91,12 +91,22 @@ function Dashboard({
 }) {
   const { draft, dirty, update, commit, discard, resetAll } = useDraft()
   const [saved, setSaved] = useState(false)
+  const [saving, setSaving] = useState(false)
+  const [saveError, setSaveError] = useState<string | null>(null)
   const location = useLocation()
 
-  const handleSave = () => {
-    commit()
-    setSaved(true)
-    window.setTimeout(() => setSaved(false), 2000)
+  const handleSave = async () => {
+    setSaving(true)
+    setSaveError(null)
+    try {
+      await commit()
+      setSaved(true)
+      window.setTimeout(() => setSaved(false), 2000)
+    } catch (error) {
+      setSaveError(error instanceof Error ? error.message : 'No se pudo guardar.')
+    } finally {
+      setSaving(false)
+    }
   }
 
   const handleDiscard = () => {
@@ -119,7 +129,7 @@ function Dashboard({
             Panel Trama
           </h1>
           <span className="rounded-full bg-brand-surface px-2 py-0.5 text-[10px] text-brand-muted">
-            {dirty ? 'Cambios sin guardar' : saved ? 'Guardado' : 'Sin cambios'}
+            {saving ? 'Guardando...' : dirty ? 'Cambios sin guardar' : saved ? 'Guardado' : 'Sin cambios'}
           </span>
 
           <div className="ml-auto flex flex-wrap items-center gap-2">
@@ -139,14 +149,20 @@ function Dashboard({
             </button>
             <button
               type="button"
-              onClick={handleSave}
-              disabled={!dirty}
+              onClick={() => void handleSave()}
+              disabled={!dirty || saving}
               className="rounded bg-brand-cyan px-3 py-1.5 text-[11px] font-bold text-brand-black transition hover:bg-brand-pink hover:text-white disabled:opacity-40"
             >
-              Guardar
+              {saving ? 'Guardando...' : 'Guardar'}
             </button>
           </div>
         </div>
+
+        {saveError && (
+          <p role="alert" className="mx-auto max-w-5xl px-4 pb-2 text-[11px] text-brand-pink">
+            {saveError}
+          </p>
+        )}
 
         <nav className="mx-auto flex max-w-5xl gap-1 overflow-x-auto px-4 pb-2">
           {PANELS.map((entry) => (
@@ -192,7 +208,7 @@ function SecurityPanel() {
       !window.confirm('¿Restaurar TODO el contenido a los valores originales? No se puede deshacer.')
     )
       return
-    resetAll()
+    void resetAll()
   }
 
   return (

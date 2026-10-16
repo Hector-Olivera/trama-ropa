@@ -1,7 +1,7 @@
 import { useCallback, useMemo, useState } from 'react'
 import { useContent } from '../content/ContentProvider'
 import { DEFAULT_CONTENT } from '../content/defaults'
-import { cleanupBlobs } from '../lib/storage'
+import { cleanupMedia } from '../content/store'
 import type { SiteContent } from '../content/types'
 
 /**
@@ -21,20 +21,20 @@ export function useDraft() {
     setDraft((current) => mutate(current))
   }, [])
 
-  const commit = useCallback(() => {
-    save(draft)
-    void cleanupBlobs()
+  const commit = useCallback(async () => {
+    await save(draft)
+    void cleanupMedia()
   }, [save, draft])
 
   const discard = useCallback(() => {
     setDraft(content)
-    void cleanupBlobs()
+    void cleanupMedia()
   }, [content])
 
-  const resetAll = useCallback(() => {
-    reset()
+  const resetAll = useCallback(async () => {
+    await reset()
     setDraft(DEFAULT_CONTENT)
-    void cleanupBlobs()
+    void cleanupMedia()
   }, [reset])
 
   return { draft, dirty, update, commit, discard, resetAll }

@@ -1,104 +1,58 @@
 /**
- * Acceso al contenido editable.
+ * Acceso al contenido editable: el UNICO modulo que conoce el backend.
  *
- * Hoy guarda en localStorage (contenido) e IndexedDB (imagenes via storage.ts),
- * que es local-first: no necesita backend.
+ * Elige el driver segun el entorno: Supabase si hay credenciales
+ * (`isSupabaseConfigured()`), si no local-first (localStorage + IndexedDB). El
+ * ContentProvider y el dashboard no se enteran de cual esta activo.
  *
- * MIGRACION A SUPABASE: este es el UNICO modulo a reemplazar. `loadContent`,
- * `saveContent`, `uploadMedia` y `removeMedia` mantienen la misma firma; el
- * ContentProvider y el dashboard no se tocan. El contenido pasaria a una tabla
- * `site_content` (una fila, jsonb) y las imagenes al bucket `media`.
+ * API (mantener estable): `loadContent` / `saveContent` / `resetContent` /
+ * `uploadMedia` / `removeMedia` / `resolveMediaSrc` / `cleanupMedia` / `isBlobRef`.
  */
-import { STORAGE_KEYS } from '../lib/storage-keys'
-import { newId } from '../lib/id'
-import { deleteBlobRef, isBlobRef, putLogoBlob, resolveDrawableSrc } from '../lib/storage'
+import { isBlobRef } from '../lib/blobReferences'
+import type { ContentDriver } from './driver'
+import { localDriver } from './drivers/local'
 import { DEFAULT_CONTENT } from './defaults'
+import { mergeContent, normalizeContent } from './merge'
 import type { MediaRef, SiteContent } from './types'
 
-const CONTENT_KEY = STORAGE_KEYS.content
-
-function isPlainObject(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null && !Array.isArray(value)
+function activeDriver(): ContentDriver {
+  return localDriver
 }
 
-/**
- * Mergea el contenido guardado sobre los defaults. Los OBJETOS se combinan
- * campo a campo (asi un contenido viejo igual recibe los campos nuevos) y los
- * ARRAYS se reemplazan enteros (asi borrar una imagen o un item realmente
- * borra, en vez de resucitar el default).
- */
-function mergeContent<T>(base: T, override: unknown): T {
-  if (!isPlainObject(base) || !isPlainObject(override)) {
-    return (override === undefined ? base : override) as T
-  }
-
-  const result: Record<string, unknown> = { ...base }
-  for (const key of Object.keys(override)) {
-    result[key] = mergeContent(base[key], override[key])
-  }
-  return result as T
-}
-
-/**
- * Asegura que cada item de las listas editables tenga un `id` estable. Es una
- * migracion para contenido guardado antes de que existieran los ids (y para
- * cualquier item que llegue sin ellos): React los usa como key y el backend
- * los usara como PK.
- */
-function withItemIds<T extends { id?: string }>(items: T[]): T[] {
-  return items.map((item) => (item.id ? item : { ...item, id: newId() }))
-}
-
-function normalizeContent(content: SiteContent): SiteContent {
-  return {
-    ...content,
-    nav: { ...content.nav, links: withItemIds(content.nav.links) },
-    hero: {
-      ...content.hero,
-      titleLines: withItemIds(content.hero.titleLines),
-      stats: withItemIds(content.hero.stats),
-    },
-    howItWorks: {
-      ...content.howItWorks,
-      steps: withItemIds(content.howItWorks.steps),
-      features: withItemIds(content.howItWorks.features),
-    },
-    footer: { ...content.footer, links: withItemIds(content.footer.links) },
-  }
-}
-
-export function loadContent(): SiteContent {
+export async function loadContent(): Promise<SiteContent> {
   try {
-    const raw = localStorage.getItem(CONTENT_KEY)
-    if (!raw) return DEFAULT_CONTENT
-    return normalizeContent(mergeContent(DEFAULT_CONTENT, JSON.parse(raw)))
+    const raw = await activeDriver().readContent()
+    if (raw == null) return DEFAULT_CONTENT
+    return normalizeContent(mergeContent(DEFAULT_CONTENT, raw))
   } catch (error) {
     console.warn('No se pudo leer el contenido, uso los defaults:', error)
     return DEFAULT_CONTENT
   }
 }
 
-export function saveContent(content: SiteContent): void {
-  try {
-    localStorage.setItem(CONTENT_KEY, JSON.stringify(content))
-  } catch (error) {
-    console.warn('No se pudo guardar el contenido:', error)
-    throw new Error('No se pudo guardar. Puede que el almacenamiento esté lleno.', {
-      cause: error,
-    })
-  }
+export async function saveContent(content: SiteContent): Promise<void> {
+  await activeDriver().writeContent(content)
 }
 
-export function resetContent(): void {
-  localStorage.removeItem(CONTENT_KEY)
+export async function resetContent(): Promise<void> {
+  await activeDriver().clearContent()
 }
 
 export async function uploadMedia(file: Blob): Promise<MediaRef> {
-  return putLogoBlob(file)
+  return activeDriver().uploadMedia(file)
 }
 
 export async function removeMedia(ref: MediaRef): Promise<void> {
-  await deleteBlobRef(ref)
+  await activeDriver().removeMedia(ref)
 }
 
-export { isBlobRef, resolveDrawableSrc as resolveMediaSrc }
+export async function resolveMediaSrc(ref: MediaRef): Promise<string> {
+  return activeDriver().resolveMediaSrc(ref)
+}
+
+/** Recolector de basura de imagenes: correr sólo con el estado ya guardado. */
+export async function cleanupMedia(): Promise<string[]> {
+  return activeDriver().cleanupMedia()
+}
+
+export { isBlobRef }

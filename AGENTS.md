@@ -72,15 +72,16 @@ npm run preview    # sirve dist, http://localhost:4173
 ```
 src/
   content/   types.ts, defaults.ts, merge.ts, driver.ts, store.ts,
-             drivers/local.ts, ContentProvider.tsx, MediaImage.tsx,
-             useResolvedImage.ts
+             drivers/local.ts, drivers/supabase.ts, ContentProvider.tsx,
+             MediaImage.tsx, useResolvedImage.ts
   admin/     AdminApp.tsx, Login.tsx, useAuth.ts, useDraft.ts,
              fields.tsx, ImageField.tsx, RepeatableList.tsx,
              RichTitleField.tsx, panels/*
   components/  Nav, Hero, Catalog, HowItWorks, Contact, Footer,
                RichTitle, editor/*
-  lib/       storage.ts, blobReferences.ts, env.ts, useEditor.ts, useHistory.ts,
-             useElementSize.ts, exportImage.ts, images.ts, imageFilters.ts
+  lib/       storage.ts, blobReferences.ts, env.ts, supabase.ts, useEditor.ts,
+             useHistory.ts, useElementSize.ts, exportImage.ts, images.ts,
+             imageFilters.ts
   data/      products.ts (DEFAULT_PRODUCTS)
   types.ts   tipos del editor (Layer, Design, ProductView)
 ```
@@ -93,8 +94,11 @@ estables y **asíncronas**: `loadContent`/`saveContent`/`resetContent` devuelven
 `Promise`; `uploadMedia`/`removeMedia`/`resolveMediaSrc`/`cleanupMedia` ya lo eran.
 `store.ts` delega en un **driver** (`driver.ts` + `drivers/*`) elegido por entorno
 (`isSupabaseConfigured()` en `src/lib/env.ts`); sin credenciales usa `drivers/local.ts`
-(localStorage + IndexedDB). Los componentes del dashboard y la landing no deberían
-enterarse del backend. `ContentProvider` maneja el estado `loading`/`error`/`ready`.
+(localStorage + IndexedDB) y con credenciales `drivers/supabase.ts` (tabla `site_content`
+jsonb + Storage `media`). El SDK de Supabase se importa **dinámicamente** (`src/lib/supabase.ts`),
+así el modo local nunca lo carga. La auth también cambia por entorno en `useAuth.ts`.
+Los componentes del dashboard y la landing no deberían enterarse del backend.
+`ContentProvider` maneja el estado `loading`/`error`/`ready`.
 
 ## Constraints del editor (no romper)
 

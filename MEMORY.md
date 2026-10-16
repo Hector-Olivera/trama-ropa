@@ -13,7 +13,7 @@ cambia, agregar una nueva con fecha. `AGENTS.md` tiene las reglas de trabajo; ac
 - Assets optimizados con `scripts/optimize-assets.mjs` (originales 60 MB → ~5 MB en
   `public/`). Los originales viven fuera del repo (carpeta `Estampados/`); **no
   modificar**.
-- Con tests (33) y CI; repo en GitHub con `main`/`develop`.
+- Con tests (36) y CI; repo en GitHub con `main`/`develop`.
 
 ## Decisiones
 
@@ -93,8 +93,22 @@ cambia, agregar una nueva con fecha. `AGENTS.md` tiene las reglas de trabajo; ac
   `useAuth.ts` ahora es **dos implementaciones** (`useLocalAuth` / `useSupabaseAuth`) y
   exporta la que corresponde por entorno; con Supabase usa email fijo `VITE_ADMIN_EMAIL`
   + contraseña (`signInWithPassword`/`updateUser`) y agrega `loading` (la sesión inicial
-  es asíncrona). `AdminApp` muestra un splash mientras se resuelve. Tests de los helpers
+  es asíncrona).   `AdminApp` muestra un splash mientras se resuelve. Tests de los helpers
   puros del driver en `src/content/drivers/supabase.test.ts`.
+- **2026-10-16** — Fix del bug de la **prenda base** en el editor: `EditorCanvas` cargaba
+  `loadImage(product.src)` con el src **crudo**, sin resolver la clave de blob
+  (`trama:blob:<id>`). Si la prenda se subió desde el admin en modo local, la carga fallaba
+  (sin `.catch`) y quedaba dibujada la imagen **anterior** estirada al `width/height` de la
+  nueva (justo lo que reportó el usuario). Ahora el hook `useLoadedImage`
+  (`src/content/useLoadedImage.ts`) resuelve el `MediaRef` (blob/URL/path) y sólo devuelve
+  la imagen si corresponde al src resuelto actual, así nunca muestra una vieja mientras
+  carga la nueva. Test: `src/content/useLoadedImage.test.ts`.
+- **2026-10-16** — Storage RLS: se quita la policy `SELECT` pública de `media` (un bucket
+  público sirve el objeto por URL sin pasar por RLS) y se deja sólo el `for all to
+  authenticated` con la condición extra `(select auth.uid()) is not null`, que silencia el
+  aviso del linter `0025_public_bucket_allows_listing` (sólo advertía sobre *listar* el
+  bucket; no bloqueaba subidas ni lecturas). `cleanupMedia()` en `useDraft` ahora lleva
+  `.catch` para no dejar un unhandled rejection si el GC falla.
 
 ## Backend: Supabase (Fase D)
 

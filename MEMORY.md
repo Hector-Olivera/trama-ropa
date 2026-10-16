@@ -11,7 +11,7 @@ cambia, agregar una nueva con fecha. `AGENTS.md` tiene las reglas de trabajo; ac
 - Assets optimizados con `scripts/optimize-assets.mjs` (originales 60 MB → ~5 MB en
   `public/`). Los originales viven fuera del repo (carpeta `Estampados/`); **no
   modificar**.
-- Sin backend. Con tests (23) y CI; repo en GitHub con `main`/`develop`.
+- Sin backend. Con tests (28) y CI; repo en GitHub con `main`/`develop`.
 
 ## Decisiones
 
@@ -57,6 +57,15 @@ cambia, agregar una nueva con fecha. `AGENTS.md` tiene las reglas de trabajo; ac
   navegar. Tests: `src/components/SectionBoundary.test.tsx` y el caso 404 dentro del
   montaje único de `AdminApp.test.tsx` (un `JumpButton` con `useNavigate` navega a
   `/admin/panel-fantasma` sin montar el panel de nuevo).
+- **2026-10-15** — **Fase C, C6**: recolector de basura de imágenes. `removeMedia`
+  existía pero **nunca se llamaba**: reemplazar/quitar una imagen dejaba el blob viejo
+  en IndexedDB. Ahora `cleanupBlobs()` (en `src/lib/storage.ts`) junta las refs
+  persistidas con `collectStoredBlobRefs()` (`src/lib/blobReferences.ts`) y borra de
+  IndexedDB los blobs que nadie referencia. Se dispara en los commits del admin
+  (`useDraft`: commit/discard/resetAll) y en el editor (autosave y borrar versión). Sólo
+  se corre contra el estado **guardado**, nunca contra un draft en memoria. Se simplificó
+  `deleteDesign` (ya no borra blobs a mano: lo hace el GC). Test:
+  `src/lib/blobReferences.test.ts`.
 
 ## Backend: decisión pendiente (Supabase vs propio) — evaluar en Fase D
 
@@ -74,9 +83,6 @@ cambia, agregar una nueva con fecha. `AGENTS.md` tiene las reglas de trabajo; ac
 ## Limitaciones / deuda técnica conocida
 
 - **Auth de admin solo en cliente** (no es seguridad real).
-- **Blobs huérfanos**: al reemplazar/quitar una imagen no se borra el blob viejo de
-  IndexedDB (fuga gradual). Quedó pendiente (no se hizo en Fase C); ojo con los blobs que
-  referencian diseños guardados del editor antes de borrar nada.
 - Contenido guardado antes de los ids: `loadContent` los regenera en cada carga hasta
   que se guarda una vez (después persisten). Aceptable por ahora.
 - `SiteContent.version` existe pero el merge todavía no lo usa para migraciones.
@@ -88,21 +94,24 @@ cambia, agregar una nueva con fecha. `AGENTS.md` tiene las reglas de trabajo; ac
   documentación (README/AGENTS/MEMORY), `ErrorBoundary` y ruta `NotFound`.
 - **Fase B (hecha)** — Calidad: Vitest + tests (17) + CI, repo en GitHub
   (`Hector-Olivera/trama-ropa`) y `main`/`develop` pusheados.
-- **Fase C (en curso)** — Refactors chicos:
+- **Fase C (hecha)** — Refactors chicos:
   - **C1 (hecha)** — claves de storage centralizadas en `src/lib/storage-keys.ts`.
   - **C2 (hecha)** — `RepeatableList` con `id` estable: id en los items de nav, hero,
     cómo funciona y footer + migración en `loadContent`; `create()` genera id con
     `src/lib/id.ts`.
   - **C3 (hecha)** — admin por rutas: `AdminApp` usa rutas anidadas
     (`/admin/marca`, `/admin/inicio`, …, `/admin/seguridad`) con `NavLink` y `<Outlet>`
-    en vez de tabs con `useState`. El redirect de `/admin` y de rutas desconocidas va a
-    la primera sección. Test de navegación en `src/admin/AdminApp.test.tsx`.
+    en vez de tabs con `useState`. El redirect de `/admin` va a la primera sección. Test de
+    navegación en `src/admin/AdminApp.test.tsx`.
   - **C4 (hecha)** — helper genérico de sección: `useSection` /
     `useSectionField` en `src/admin/panels/useSection.ts` reemplazan el `setX` repetido
     de cada panel y sus spreads anidados (`contact.whatsapp`, `hero.primary`, `nav.cta`,
     …). Test en `src/admin/panels/useSection.test.ts`.
   - **C5 (hecha)** — resiliencia: `SectionBoundary` por sección en la landing y en el
     panel + 404 real en admin (`AdminNotFound`).
+  - **C6 (hecha)** — limpieza de blobs huérfanos: `cleanupBlobs()` (GC de imágenes)
+    contra el contenido y los diseños persistidos; `collectStoredBlobRefs` en
+    `src/lib/blobReferences.ts`. Test en `src/lib/blobReferences.test.ts`.
 - **Fase D** — Backend: decidir Supabase vs propio, esquema de contenido + storage de
   imágenes + auth real; swap del seam.
 

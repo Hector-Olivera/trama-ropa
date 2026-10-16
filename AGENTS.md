@@ -78,8 +78,8 @@ src/
              RichTitleField.tsx, panels/*
   components/  Nav, Hero, Catalog, HowItWorks, Contact, Footer,
                RichTitle, editor/*
-  lib/       storage.ts, useEditor.ts, useHistory.ts, useElementSize.ts,
-             exportImage.ts, images.ts, imageFilters.ts
+  lib/       storage.ts, blobReferences.ts, useEditor.ts, useHistory.ts,
+             useElementSize.ts, exportImage.ts, images.ts, imageFilters.ts
   data/      products.ts (DEFAULT_PRODUCTS)
   types.ts   tipos del editor (Layer, Design, ProductView)
 ```
@@ -102,6 +102,10 @@ landing no deberían enterarse del backend.
   URL). `MediaRef` es un path de `public/` o una clave de blob. Toda `<img>` de
   contenido pasa por `MediaImage`.
 - `useResolvedImage` resuelve blobs de forma asíncrona; no mezclar con src síncrono.
+- **Blobs**: los binarios viven en IndexedDB y las refs son `trama:blob:<id>`. El GC
+  (`cleanupBlobs()` en `src/lib/storage.ts`) borra lo que no referencian el contenido ni
+  los diseños **persistidos**. Llamalo sólo con el estado ya guardado (ej. tras un commit),
+  nunca con un draft sin guardar en memoria.
 
 ## Convenciones de contenido
 

@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type Konva from 'konva'
 import { useContent } from '../../content/ContentProvider'
 import { exportDesign } from '../../lib/exportImage'
-import { deleteDesign, listDesigns, saveDesign } from '../../lib/storage'
+import { deleteDesign, cleanupBlobs, listDesigns, saveDesign } from '../../lib/storage'
 import { useEditor } from '../../lib/useEditor'
 import { useElementSize } from '../../lib/useElementSize'
 import type { ExportFormat, ExportScale, Layer, ProductView } from '../../types'
@@ -94,6 +94,7 @@ export function EditorSection() {
         updatedAt: now,
       })
       setSavedSignature(signature)
+      void cleanupBlobs()
     }, 900)
 
     return () => clearTimeout(timer)
@@ -208,6 +209,7 @@ export function EditorSection() {
   const handleDelete = (id: string) => {
     deleteDesign(id)
     setSaved(listDesigns())
+    void cleanupBlobs()
   }
 
   const versions = saved.filter((design) => design.id !== 'autosave')

@@ -7,11 +7,13 @@ cambia, agregar una nueva con fecha. `AGENTS.md` tiene las reglas de trabajo; ac
 ## Estado actual
 
 - Landing + editor + panel `/admin` funcionando. `tsc -b`, `lint` y `build` limpios.
-- Persistencia **local-first**: contenido en `localStorage`, imágenes en `IndexedDB`.
+- Persistencia **local-first** por defecto: contenido en `localStorage`, imágenes en
+  `IndexedDB`. **Supabase listo** (driver + auth) y se activa solo al configurar las
+  variables de entorno (sin credenciales no se carga el SDK).
 - Assets optimizados con `scripts/optimize-assets.mjs` (originales 60 MB → ~5 MB en
   `public/`). Los originales viven fuera del repo (carpeta `Estampados/`); **no
   modificar**.
-- Sin backend. Con tests (28) y CI; repo en GitHub con `main`/`develop`.
+- Con tests (33) y CI; repo en GitHub con `main`/`develop`.
 
 ## Decisiones
 
@@ -79,8 +81,20 @@ cambia, agregar una nueva con fecha. `AGENTS.md` tiene las reglas de trabajo; ac
   y el guardado del panel pasan a `async` (con estado `Guardando…` y error visible). Env
   tipado en `src/vite-env.d.ts` + `src/lib/env.ts` (`VITE_SUPABASE_URL`,
   `VITE_SUPABASE_ANON_KEY`, `VITE_ADMIN_EMAIL`). Guía de proyecto/SQL/RLS/bucket en
-  `docs/supabase-setup.md` y `.env.example`. `store.test.ts` y `AdminApp.test.tsx` ahora
+  `docs/supabase-setup.md` y `.env.example`.   `store.test.ts` y `AdminApp.test.tsx` ahora
   `await`ean. Nota: los **diseños del editor** siguen locales (IndexedDB), no se suben.
+- **2026-10-15** — **Fase D, D2 (hecha)**: driver y auth de Supabase. `@supabase/supabase-js`
+  se importa **dinámicamente** (`src/lib/supabase.ts`, cliente cacheado; `null` sin
+  credenciales) para que el modo local no cargue el SDK (bundle y tests). Nuevo
+  `src/content/drivers/supabase.ts` (`createSupabaseDriver`): contenido en la tabla
+  `site_content` (fila `id=1`, columna `content` jsonb) y imágenes en el bucket público
+  `media` (la ref guardada es la **URL pública**; `cleanupMedia` lista el bucket y borra
+  lo que no referencia el contenido). `store.ts` elige el driver de forma asíncrona.
+  `useAuth.ts` ahora es **dos implementaciones** (`useLocalAuth` / `useSupabaseAuth`) y
+  exporta la que corresponde por entorno; con Supabase usa email fijo `VITE_ADMIN_EMAIL`
+  + contraseña (`signInWithPassword`/`updateUser`) y agrega `loading` (la sesión inicial
+  es asíncrona). `AdminApp` muestra un splash mientras se resuelve. Tests de los helpers
+  puros del driver en `src/content/drivers/supabase.test.ts`.
 
 ## Backend: Supabase (Fase D)
 
@@ -92,13 +106,16 @@ cambia, agregar una nueva con fecha. `AGENTS.md` tiene las reglas de trabajo; ac
   (id = 1), con **RLS** (lectura pública, escritura autenticada). Las imágenes del contenido
   van al bucket público `media` y la ref guardada es la **URL pública**. Los diseños del
   editor siguen locales.
-- Pendiente (**D2**): dependencia `@supabase/supabase-js`, `src/lib/supabase.ts` (cliente),
-  `drivers/supabase.ts` (contenido + Storage + GC) y auth real vía `supabase.auth` con email
-  fijo (`useAuth` → sesión de Supabase; el Login sigue pidiendo sólo la contraseña).
+- Cliente y auth: `src/lib/supabase.ts` (cliente, import **dinámico**), `drivers/supabase.ts`
+  (contenido + Storage + GC) y `useAuth` con `supabase.auth` y email fijo `VITE_ADMIN_EMAIL`
+  (el Login sigue pidiendo sólo la contraseña). Todo detallado en la entrada D2 de arriba.
+- Falta únicamente lo del lado de Supabase: crear el proyecto y correr el SQL/bucket/RLS/usuario
+  de `docs/supabase-setup.md`, y cargar `.env.local`. Sin eso, la app sigue en local.
 
 ## Limitaciones / deuda técnica conocida
 
-- **Auth de admin solo en cliente** (no es seguridad real).
+- **Auth de admin**: con Supabase es real (email fijo + contraseña, RLS). En modo local
+  sigue siendo un candado del cliente (SHA-256 en `localStorage`), **no seguridad real**.
 - Contenido guardado antes de los ids: `loadContent` los regenera en cada carga hasta
   que se guarda una vez (después persisten). Aceptable por ahora.
 - `SiteContent.version` existe pero el merge todavía no lo usa para migraciones.
@@ -132,8 +149,10 @@ cambia, agregar una nueva con fecha. `AGENTS.md` tiene las reglas de trabajo; ac
   - **D1 (hecha)** — preparación: seam **asíncrono** + abstracción de **driver**
     (`src/content/driver.ts`, `drivers/local.ts`, `merge.ts`), `ContentProvider` con
     `loading`/`error`, env tipado (`src/lib/env.ts`), `docs/supabase-setup.md` + `.env.example`.
-  - **D2 (pendiente)** — driver Supabase real (tabla `site_content` jsonb + Storage bucket
-    `media` + GC de Storage) y auth real (`supabase.auth`, email fijo `VITE_ADMIN_EMAIL`).
+  - **D2 (hecha)** — driver Supabase (`drivers/supabase.ts`: tabla `site_content` jsonb +
+    Storage `media` + GC) y auth real (`useAuth` con `supabase.auth`, email fijo
+    `VITE_ADMIN_EMAIL`); SDK con import dinámico. Próximo: crear el proyecto en Supabase
+    (pasos del usuario) y verificar de punta a punta.
 
 ## Skills / MCP
 

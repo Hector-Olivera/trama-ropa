@@ -4,9 +4,10 @@ Guía para conectar el sitio a Supabase (contenido + imágenes en la nube y auth
 panel). Mientras no haya credenciales, la app sigue funcionando en modo local-first
 (localStorage + IndexedDB): no hace falta Supabase para desarrollar.
 
-> Estado: el **seam ya es asíncrono** y `ContentProvider` maneja `loading`/`error`.
-> El driver de Supabase es la Fase D2; hasta entonces `src/content/store.ts` usa el
-> driver local. Estos pasos dejan el proyecto listo para enchufarlo.
+> Estado: el driver de Supabase y la auth ya están implementados. Sin credenciales la
+> app corre en modo local-first (el SDK ni se carga); al completar `.env.local` cambia
+> solo a Supabase. Sólo falta crear el proyecto y correr el SQL/bucket/RLS/usuario de
+> abajo. El código está en `src/content/drivers/supabase.ts` y `src/admin/useAuth.ts`.
 
 ## 1. Crear el proyecto
 

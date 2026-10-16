@@ -9,19 +9,26 @@
  * `uploadMedia` / `removeMedia` / `resolveMediaSrc` / `cleanupMedia` / `isBlobRef`.
  */
 import { isBlobRef } from '../lib/blobReferences'
+import { isSupabaseConfigured } from '../lib/env'
+import { getSupabaseClient } from '../lib/supabase'
 import type { ContentDriver } from './driver'
 import { localDriver } from './drivers/local'
+import { createSupabaseDriver } from './drivers/supabase'
 import { DEFAULT_CONTENT } from './defaults'
 import { mergeContent, normalizeContent } from './merge'
 import type { MediaRef, SiteContent } from './types'
 
-function activeDriver(): ContentDriver {
+async function activeDriver(): Promise<ContentDriver> {
+  if (isSupabaseConfigured()) {
+    const client = await getSupabaseClient()
+    if (client) return createSupabaseDriver(client)
+  }
   return localDriver
 }
 
 export async function loadContent(): Promise<SiteContent> {
   try {
-    const raw = await activeDriver().readContent()
+    const raw = await (await activeDriver()).readContent()
     if (raw == null) return DEFAULT_CONTENT
     return normalizeContent(mergeContent(DEFAULT_CONTENT, raw))
   } catch (error) {
@@ -31,28 +38,28 @@ export async function loadContent(): Promise<SiteContent> {
 }
 
 export async function saveContent(content: SiteContent): Promise<void> {
-  await activeDriver().writeContent(content)
+  await (await activeDriver()).writeContent(content)
 }
 
 export async function resetContent(): Promise<void> {
-  await activeDriver().clearContent()
+  await (await activeDriver()).clearContent()
 }
 
 export async function uploadMedia(file: Blob): Promise<MediaRef> {
-  return activeDriver().uploadMedia(file)
+  return (await activeDriver()).uploadMedia(file)
 }
 
 export async function removeMedia(ref: MediaRef): Promise<void> {
-  await activeDriver().removeMedia(ref)
+  await (await activeDriver()).removeMedia(ref)
 }
 
 export async function resolveMediaSrc(ref: MediaRef): Promise<string> {
-  return activeDriver().resolveMediaSrc(ref)
+  return (await activeDriver()).resolveMediaSrc(ref)
 }
 
 /** Recolector de basura de imagenes: correr sólo con el estado ya guardado. */
 export async function cleanupMedia(): Promise<string[]> {
-  return activeDriver().cleanupMedia()
+  return (await activeDriver()).cleanupMedia()
 }
 
 export { isBlobRef }

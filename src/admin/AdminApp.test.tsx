@@ -49,11 +49,11 @@ afterEach(() => {
 })
 
 describe('AdminApp por rutas', () => {
-  it('redirige /admin a la primera sección, navega por el menú y responde 404', () => {
+  it('redirige /admin a la primera sección, navega por el menú y responde 404', async () => {
     mountAdmin('/admin')
 
-    expect(screen.getByText('Panel Trama')).toBeTruthy()
-    expect(screen.getByText('Botón principal')).toBeTruthy()
+    expect(await screen.findByText('Panel Trama')).toBeTruthy()
+    expect(await screen.findByText('Botón principal')).toBeTruthy()
 
     fireEvent.click(screen.getByRole('link', { name: 'Inicio' }))
     expect(screen.getByText('Antetítulo')).toBeTruthy()

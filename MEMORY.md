@@ -66,19 +66,35 @@ cambia, agregar una nueva con fecha. `AGENTS.md` tiene las reglas de trabajo; ac
   se corre contra el estado **guardado**, nunca contra un draft en memoria. Se simplificó
   `deleteDesign` (ya no borra blobs a mano: lo hace el GC). Test:
   `src/lib/blobReferences.test.ts`.
+- **2026-10-15** — **Fase D, decisiones**: backend = **Supabase** (free tier, todo-en-uno).
+  Auth del admin = **email fijo por env `VITE_ADMIN_EMAIL` + contraseña** (el Login sigue
+  pidiendo sólo la contraseña). Se **arranca de cero** en la nube (no se migra el contenido
+  local). Se **mantiene el fallback local-first** cuando faltan credenciales.
+- **2026-10-15** — **Fase D, D1 (preparación, sin Supabase todavía)**: el seam de contenido
+  pasa a **asíncrono** y se parametriza por **driver**. Nuevos: `src/content/merge.ts`
+  (merge/normalize extraídos de `store.ts`), `src/content/driver.ts` (`ContentDriver`) y
+  `src/content/drivers/local.ts` (localStorage + IndexedDB, la lógica de antes). `store.ts`
+  queda como selector (`isSupabaseConfigured()` → driver). `ContentProvider` maneja
+  `loading`/`error`/`ready` con pantalla de carga y de reintento. `useDraft.commit`/`resetAll`
+  y el guardado del panel pasan a `async` (con estado `Guardando…` y error visible). Env
+  tipado en `src/vite-env.d.ts` + `src/lib/env.ts` (`VITE_SUPABASE_URL`,
+  `VITE_SUPABASE_ANON_KEY`, `VITE_ADMIN_EMAIL`). Guía de proyecto/SQL/RLS/bucket en
+  `docs/supabase-setup.md` y `.env.example`. `store.test.ts` y `AdminApp.test.tsx` ahora
+  `await`ean. Nota: los **diseños del editor** siguen locales (IndexedDB), no se suben.
 
-## Backend: decisión pendiente (Supabase vs propio) — evaluar en Fase D
+## Backend: Supabase (Fase D)
 
-- Requisito del usuario: que podamos **alojarlo gratis** y tener los **mismos
-  beneficios** que Supabase (auth, DB, storage de imágenes, API).
-- Principio de diseño desde ya: mantener el **seam de datos genérico**
-  (`src/content/store.ts` + `src/admin/useAuth.ts`) para poder cambiar de backend sin
-  tocar componentes. Preferir una interfaz de repositorio/auth por encima de funciones
-  sueltas.
-- Opciones a evaluar: Supabase (todo-en-uno, free tier) vs. propio (ej. Node/Fastify +
-  Postgres gestionado gratis [Neon] + storage S3-compatible [Cloudflare R2] + auth
-  propia, hosteado en Render/Railway/Fly). Decidir con costos y mantenimiento sobre la
-  mesa.
+- Elegido **Supabase** (free tier; auth + Postgres + Storage + API en uno). Guía de puesta
+  en marcha: `docs/supabase-setup.md`.
+- Principio de diseño: mantener el **seam de datos genérico** (`src/content/store.ts` +
+  `src/admin/useAuth.ts`) para poder cambiar de backend sin tocar componentes.
+- El contenido se guarda como un único `jsonb` en la tabla de una fila `site_content`
+  (id = 1), con **RLS** (lectura pública, escritura autenticada). Las imágenes del contenido
+  van al bucket público `media` y la ref guardada es la **URL pública**. Los diseños del
+  editor siguen locales.
+- Pendiente (**D2**): dependencia `@supabase/supabase-js`, `src/lib/supabase.ts` (cliente),
+  `drivers/supabase.ts` (contenido + Storage + GC) y auth real vía `supabase.auth` con email
+  fijo (`useAuth` → sesión de Supabase; el Login sigue pidiendo sólo la contraseña).
 
 ## Limitaciones / deuda técnica conocida
 
@@ -112,8 +128,12 @@ cambia, agregar una nueva con fecha. `AGENTS.md` tiene las reglas de trabajo; ac
   - **C6 (hecha)** — limpieza de blobs huérfanos: `cleanupBlobs()` (GC de imágenes)
     contra el contenido y los diseños persistidos; `collectStoredBlobRefs` en
     `src/lib/blobReferences.ts`. Test en `src/lib/blobReferences.test.ts`.
-- **Fase D** — Backend: decidir Supabase vs propio, esquema de contenido + storage de
-  imágenes + auth real; swap del seam.
+- **Fase D (en curso)** — Backend **Supabase**:
+  - **D1 (hecha)** — preparación: seam **asíncrono** + abstracción de **driver**
+    (`src/content/driver.ts`, `drivers/local.ts`, `merge.ts`), `ContentProvider` con
+    `loading`/`error`, env tipado (`src/lib/env.ts`), `docs/supabase-setup.md` + `.env.example`.
+  - **D2 (pendiente)** — driver Supabase real (tabla `site_content` jsonb + Storage bucket
+    `media` + GC de Storage) y auth real (`supabase.auth`, email fijo `VITE_ADMIN_EMAIL`).
 
 ## Skills / MCP
 

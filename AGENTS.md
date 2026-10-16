@@ -71,14 +71,15 @@ npm run preview    # sirve dist, http://localhost:4173
 
 ```
 src/
-  content/   types.ts, defaults.ts, store.ts, ContentProvider.tsx,
-             MediaImage.tsx, useResolvedImage.ts
+  content/   types.ts, defaults.ts, merge.ts, driver.ts, store.ts,
+             drivers/local.ts, ContentProvider.tsx, MediaImage.tsx,
+             useResolvedImage.ts
   admin/     AdminApp.tsx, Login.tsx, useAuth.ts, useDraft.ts,
              fields.tsx, ImageField.tsx, RepeatableList.tsx,
              RichTitleField.tsx, panels/*
   components/  Nav, Hero, Catalog, HowItWorks, Contact, Footer,
                RichTitle, editor/*
-  lib/       storage.ts, blobReferences.ts, useEditor.ts, useHistory.ts,
+  lib/       storage.ts, blobReferences.ts, env.ts, useEditor.ts, useHistory.ts,
              useElementSize.ts, exportImage.ts, images.ts, imageFilters.ts
   data/      products.ts (DEFAULT_PRODUCTS)
   types.ts   tipos del editor (Layer, Design, ProductView)
@@ -88,9 +89,12 @@ src/
 
 `src/content/store.ts` y `src/admin/useAuth.ts` son el **único** punto a reemplazar
 para migrar de local-first a un backend (Supabase o propio). Mantené esas interfaces
-estables: `loadContent`/`saveContent`/`resetContent`/`uploadMedia`/`removeMedia`/
-`resolveMediaSrc` y `isAuthed`/`login`/`logout`. Los componentes del dashboard y la
-landing no deberían enterarse del backend.
+estables y **asíncronas**: `loadContent`/`saveContent`/`resetContent` devuelven
+`Promise`; `uploadMedia`/`removeMedia`/`resolveMediaSrc`/`cleanupMedia` ya lo eran.
+`store.ts` delega en un **driver** (`driver.ts` + `drivers/*`) elegido por entorno
+(`isSupabaseConfigured()` en `src/lib/env.ts`); sin credenciales usa `drivers/local.ts`
+(localStorage + IndexedDB). Los componentes del dashboard y la landing no deberían
+enterarse del backend. `ContentProvider` maneja el estado `loading`/`error`/`ready`.
 
 ## Constraints del editor (no romper)
 
@@ -110,7 +114,7 @@ landing no deberían enterarse del backend.
 ## Convenciones de contenido
 
 - Todo texto/imagen editable vive en `SiteContent` (`src/content/types.ts`) y tiene
-  default en `defaults.ts`. El merge de `store.ts` combina **objetos campo a campo** y
-  **reemplaza arrays enteros** (para que borrar de verdad borre).
+  default en `defaults.ts`. El merge (`src/content/merge.ts`) combina **objetos campo a
+  campo** y **reemplaza arrays enteros** (para que borrar de verdad borre).
 - Al agregar un campo nuevo a `SiteContent`: agregarlo en `types.ts`, en
   `DEFAULT_CONTENT` y en el panel correspondiente. Así el contenido viejo no rompe.

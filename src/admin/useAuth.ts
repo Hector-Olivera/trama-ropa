@@ -18,6 +18,16 @@ import { STORAGE_KEYS } from '../lib/storage-keys'
 
 export const DEFAULT_PASSWORD = 'trama'
 
+export type LoginResult = { ok: boolean; error?: string }
+
+export function mapAuthError(message: string): string {
+  const normalized = message.toLowerCase()
+  if (normalized.includes('invalid login credentials')) return 'Email o contraseña incorrectos.'
+  if (normalized.includes('email not confirmed')) return 'El email no está confirmado en Supabase.'
+  if (normalized.includes('invalid api key')) return 'Configuración de Supabase inválida (API key).'
+  return message
+}
+
 const HASH_KEY = STORAGE_KEYS.adminHash
 const SESSION_KEY = STORAGE_KEYS.adminSession
 
@@ -37,7 +47,7 @@ export type Auth = {
   isAuthed: boolean
   /** true mientras se resuelve la sesión inicial (sólo con Supabase). */
   loading: boolean
-  login: (password: string) => Promise<boolean>
+  login: (password: string) => Promise<LoginResult>
   logout: () => void
   changePassword: (current: string, next: string) => Promise<boolean>
   /** false invita a mostrar la pista de la contraseña inicial (modo local). */
@@ -47,14 +57,13 @@ export type Auth = {
 function useLocalAuth(): Auth {
   const [isAuthed, setIsAuthed] = useState(() => localStorage.getItem(SESSION_KEY) === '1')
 
-  const login = useCallback(async (password: string) => {
+  const login = useCallback(async (password: string): Promise<LoginResult> => {
     const hash = storedHash()
     const ok = hash ? (await sha256(password)) === hash : password === DEFAULT_PASSWORD
-    if (ok) {
-      localStorage.setItem(SESSION_KEY, '1')
-      setIsAuthed(true)
-    }
-    return ok
+    if (!ok) return { ok: false, error: 'Contraseña incorrecta.' }
+    localStorage.setItem(SESSION_KEY, '1')
+    setIsAuthed(true)
+    return { ok: true }
   }, [])
 
   const logout = useCallback(() => {
@@ -103,13 +112,13 @@ function useSupabaseAuth(): Auth {
     }
   }, [])
 
-  const login = useCallback(async (password: string) => {
+  const login = useCallback(async (password: string): Promise<LoginResult> => {
     const client = await getSupabaseClient()
-    if (!client) return false
+    if (!client) return { ok: false, error: 'No se pudo conectar con Supabase.' }
     const { error } = await client.auth.signInWithPassword({ email: ADMIN_EMAIL, password })
-    if (error) return false
+    if (error) return { ok: false, error: mapAuthError(error.message) }
     setIsAuthed(true)
-    return true
+    return { ok: true }
   }, [])
 
   const logout = useCallback(() => {

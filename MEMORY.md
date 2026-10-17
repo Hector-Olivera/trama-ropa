@@ -95,6 +95,23 @@ cambia, agregar una nueva con fecha. `AGENTS.md` tiene las reglas de trabajo; ac
   + contraseña (`signInWithPassword`/`updateUser`) y agrega `loading` (la sesión inicial
   es asíncrona). `AdminApp` muestra un splash mientras se resuelve. Tests de los helpers
   puros del driver en `src/content/drivers/supabase.test.ts`.
+- **2026-10-16** — **Recuperación de contraseña: sólo por el dashboard de Supabase**
+  (Authentication → Users → Reset password / Send recovery). Decisión: **no** se agrega
+  botón "olvidé mi contraseña" en la app, para no ampliar la superficie de ataque (spam de
+  mails / consumo de cuota). Documentado en `docs/supabase-setup.md` junto con la
+  recomendación de contraseña fuerte y MFA. Aclaración: al conectar Supabase el candado
+  local (`trama`) deja de aplicar por completo; la contraseña es la del usuario admin en
+  Supabase.
+- **2026-10-16** — **Convención `docs/PR.md`**: al preparar una rama para PR, el agente
+  escribe ahí el título y el cuerpo (archivo **gitignored**, borrador local) para que el
+  usuario lo copie (`Get-Content docs\PR.md | Set-Clipboard` o `cat docs/PR.md | clip`) o lo
+  use con `gh pr create --body-file docs/PR.md`. Regla agregada a `AGENTS.md`.
+- **2026-10-16** — **Tests aislados de `.env.local`**: al conectar Supabase, `npm test`
+  empezó a usar el driver de Supabase porque Vitest/Vite cargan `.env.local`; fallaban
+  `store.test.ts` y `AdminApp.test.tsx` (esperaban el driver local). Se fija `test.env` en
+  `vitest.config.ts` con `VITE_SUPABASE_URL`/`VITE_SUPABASE_ANON_KEY`/`VITE_ADMIN_EMAIL`
+  vacíos, así los tests son **deterministas** (siempre driver local) sin importar el
+  entorno del que corre. CI nunca tuvo `.env.local`, por eso pasaba.
 
 ## Backend: Supabase (Fase D)
 

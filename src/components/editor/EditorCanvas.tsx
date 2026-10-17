@@ -11,6 +11,7 @@ import type { ImageLayer, Layer, ProductView, TextLayer } from '../../types'
 import { getLoadedImage, loadImage } from '../../lib/images'
 import { resolveDrawableSrc } from '../../lib/storage'
 import { filterKey, getFilteredCanvas, isFilterNeutral } from '../../lib/imageFilters'
+import { useLoadedImage } from '../../content/useLoadedImage'
 import { TextOverlay } from './TextOverlay'
 
 export type CanvasMetrics = {
@@ -47,22 +48,12 @@ export function EditorCanvas({
   const { stageWidth, stageHeight, scale, offsetX, offsetY } = metrics
   const transformerRef = useRef<Konva.Transformer>(null)
   const nodeRefs = useRef(new Map<string, Konva.Node>())
-  const [productImage, setProductImage] = useState<HTMLImageElement | null>(null)
+  const productImage = useLoadedImage(product.src)
 
   const editingLayer = useMemo(
     () => layers.find((item) => item.id === editingId) ?? null,
     [layers, editingId],
   )
-
-  useEffect(() => {
-    let active = true
-    void loadImage(product.src).then((image) => {
-      if (active) setProductImage(image)
-    })
-    return () => {
-      active = false
-    }
-  }, [product.src])
 
   useEffect(() => {
     const transformer = transformerRef.current

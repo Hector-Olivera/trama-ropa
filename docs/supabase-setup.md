@@ -139,3 +139,7 @@ tener en cuenta:
   `isSupabaseConfigured()` es `false` y `store.ts` usa el driver local.
 - Los **diseños del editor** (los que hace el visitante) siguen siendo locales en
   IndexedDB: no se suben al backend.
+- **Deploy**: al publicar (ej. Vercel), copiá la URL del sitio en
+  **Authentication → URL Configuration → Site URL** y agregala a **Redirect URLs**.
+  Con login por contraseña no es crítico, pero mantiene el reset de contraseña y
+  los mails apuntando al dominio correcto.

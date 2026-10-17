@@ -92,8 +92,38 @@ path de `public/` o la clave `trama:blob:<id>`). `MediaImage` ya resuelve ambos 
 ## 5. Usuario admin
 
 1. En **Authentication → Users** creá un usuario con el email `VITE_ADMIN_EMAIL` y una
-   contraseña fuerte (o invitá el email).
+   **contraseña fuerte y única** (no uses `trama`: esa es sólo la pista del modo local).
 2. El Login sólo pide la contraseña: el email sale de `VITE_ADMIN_EMAIL`.
+
+### Recuperar la contraseña
+
+La app **no** tiene botón de "olvidé mi contraseña" (decisión: menos superficie de
+ataque). Se resetea desde el panel de Supabase:
+
+- **Authentication → Users** → buscá el usuario admin → menú **⋯** → **Reset password**
+  (o **Send recovery**). En un sitio de un solo admin, esto es lo más simple y seguro:
+  no agrega endpoints ni puede usarse para spamear mails desde la app.
+
+Si más adelante se quisiera recuperación desde la app (`resetPasswordForEmail`), hay que
+tener en cuenta:
+
+- El email es **fijo** (`VITE_ADMIN_EMAIL`), nunca lo escribe el usuario: no hay
+  enumeración de cuentas.
+- El principal riesgo es **spam de mails / consumo de cuota** de emails de auth
+  (cualquiera que abra `/admin` podría dispararlo). Mitigar con **Rate Limits**
+  (Authentication → Rate Limits) y/o mostrar el botón recién tras un intento fallido.
+- `redirectTo` debe ser **fijo en código** y estar en la allowlist **exacta** de
+  **Authentication → URL Configuration → Redirect URLs** (p. ej.
+  `http://localhost:5173/admin/restablecer` y `https://<dominio>/admin/restablecer`).
+  **Nunca** un wildcard (`https://*.vercel.app`) ni tomado de un query param: un
+  open redirect se lleva el token de recuperación.
+
+### Endurecer la cuenta del admin
+
+- Contraseña fuerte y única (gestor de contraseñas).
+- Recomendado: activar **MFA (TOTP)** en **Authentication → Users → MFA** para el admin.
+- Ojo: `VITE_ADMIN_EMAIL` es **público** (todo `VITE_*` va al bundle); sólo revela el
+  email, nada más.
 
 ## 6. Verificación
 

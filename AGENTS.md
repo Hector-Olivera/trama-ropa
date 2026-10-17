@@ -40,6 +40,7 @@ npm run preview    # sirve dist, http://localhost:4173
   - Rama de integración: `develop`. Todas las features nacen desde `develop`.
   - Para cada feature: crear rama `feature/<descripcion-corta>` desde `develop`, trabajar, hacer commits atómicos, pushear la rama y proporcionar al usuario la descripción/URL para abrir un PR a `develop`.
   - Merge a `main` únicamente cuando corresponda (liberación/versionado). El propio agente **no** hace merges ni crea PRs en GitHub; solo prepara, commitea y pushea las ramas de feature, dejando al usuario el PR.
+  - **Descripción del PR**: antes de entregar la rama, escribir el título y el cuerpo del PR en `docs/PR.md` (archivo **gitignored**, un borrador local). El usuario lo copia con `Get-Content docs\PR.md | Set-Clipboard` (PowerShell) o `cat docs/PR.md | clip` (Git Bash), o lo usa con `gh pr create --body-file docs/PR.md`.
 - Rama principal: `main`. CI en GitHub Actions (`.github/workflows/ci.yml`).
 
 ## Reglas de código
@@ -66,6 +67,8 @@ npm run preview    # sirve dist, http://localhost:4173
   de la app.
 - Cada test nuevo va cerca del módulo que prueba (`store.test.ts` junto a
   `store.ts`). Probar comportamiento, no implementación.
+- Los tests corren con Supabase **desactivado** (`test.env` vacío en `vitest.config.ts`),
+  para que sean deterministas aunque exista un `.env.local` con credenciales.
 
 ## Arquitectura (mapa)
 

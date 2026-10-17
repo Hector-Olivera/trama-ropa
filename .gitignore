@@ -15,6 +15,8 @@ Thumbs.db
 .vite
 node_modules/.tmp
 
+docs/PR.md
+
 .vscode/*
 !.vscode/settings.json
 !.vscode/extensions.json

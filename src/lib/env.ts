@@ -6,6 +6,8 @@
 export const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL?.trim() ?? ''
 export const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY?.trim() ?? ''
 
+export const CONTACT_ACCESS_KEY = import.meta.env.VITE_CONTACT_ACCESS_KEY?.trim() ?? ''
+
 /** Email del unico admin; el Login solo pide la contrasena. */
 export const ADMIN_EMAIL = import.meta.env.VITE_ADMIN_EMAIL?.trim() ?? ''
 

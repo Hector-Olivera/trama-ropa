@@ -151,7 +151,7 @@ export const DEFAULT_CONTENT: SiteContent = {
       href: 'mailto:hola@tramaropa.com.ar',
     },
     formTitle: 'Pedí tu presupuesto',
-    formNote: 'El formulario todavía no envía nada: conectalo a tu backend o a un servicio de mail.',
+    formNote: 'Tus datos solo se usan para responderte. Te respondemos a la brevedad.',
   },
 
   footer: {

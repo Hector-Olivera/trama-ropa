@@ -23,18 +23,18 @@ export function useDraft() {
 
   const commit = useCallback(async () => {
     await save(draft)
-    void cleanupMedia()
+    cleanupMedia().catch(() => {})
   }, [save, draft])
 
   const discard = useCallback(() => {
     setDraft(content)
-    void cleanupMedia()
+    cleanupMedia().catch(() => {})
   }, [content])
 
   const resetAll = useCallback(async () => {
     await reset()
     setDraft(DEFAULT_CONTENT)
-    void cleanupMedia()
+    cleanupMedia().catch(() => {})
   }, [reset])
 
   return { draft, dirty, update, commit, discard, resetAll }

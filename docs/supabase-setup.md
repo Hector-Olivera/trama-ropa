@@ -71,16 +71,20 @@ insert into storage.buckets (id, name, public)
 values ('media', 'media', true)
 on conflict (id) do nothing;
 
-create policy "media legible por todos"
-  on storage.objects for select
-  using (bucket_id = 'media');
-
 create policy "media editable por autenticados"
   on storage.objects for all
   to authenticated
-  using (bucket_id = 'media')
-  with check (bucket_id = 'media');
+  using (bucket_id = 'media' and (select auth.uid()) is not null)
+  with check (bucket_id = 'media' and (select auth.uid()) is not null);
 ```
+
+No hace falta una policy de `SELECT` para lectura: al ser un bucket **público**,
+cualquiera accede al objeto por su URL (`/storage/v1/object/public/media/...`) sin
+pasar por RLS. La policy de arriba sólo la usa el admin autenticado para subir,
+borrar y listar (el GC de `cleanupMedia`). La condición extra
+`(select auth.uid()) is not null` evita el aviso del linter
+`0025_public_bucket_allows_listing` ("un SELECT amplio permite listar el bucket"),
+que es sólo un warning de exposición, no un bloqueo de subidas ni de lecturas.
 
 La ref guardada en el contenido pasa a ser la **URL pública** del objeto (hoy es un
 path de `public/` o la clave `trama:blob:<id>`). `MediaImage` ya resuelve ambos casos.

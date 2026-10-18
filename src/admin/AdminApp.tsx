@@ -1,6 +1,16 @@
 import { useState } from 'react'
-import { Link } from 'react-router-dom'
+import {
+  Link,
+  Navigate,
+  NavLink,
+  Outlet,
+  Route,
+  Routes,
+  useLocation,
+  useOutletContext,
+} from 'react-router-dom'
 import { Login } from './Login'
+import { AdminNotFound } from './AdminNotFound'
 import { useAuth } from './useAuth'
 import { useDraft } from './useDraft'
 import { BrandNavPanel } from './panels/BrandNavPanel'
@@ -11,25 +21,73 @@ import { FooterPanel } from './panels/FooterPanel'
 import { HeroPanel } from './panels/HeroPanel'
 import { HowItWorksPanel } from './panels/HowItWorksPanel'
 import type { PanelProps } from './panels/types'
+import { SectionBoundary } from '../components/SectionBoundary'
 
-const TABS: { id: string; label: string; Panel: (props: PanelProps) => React.ReactElement }[] = [
-  { id: 'brand', label: 'Marca y menú', Panel: BrandNavPanel },
-  { id: 'hero', label: 'Inicio', Panel: HeroPanel },
-  { id: 'editor', label: 'Editor', Panel: EditorPanel },
-  { id: 'catalog', label: 'Catálogo', Panel: CatalogPanel },
-  { id: 'how', label: 'Cómo funciona', Panel: HowItWorksPanel },
-  { id: 'contact', label: 'Contacto', Panel: ContactPanel },
-  { id: 'footer', label: 'Pie', Panel: FooterPanel },
+type PanelEntry = {
+  slug: string
+  label: string
+  Panel: (props: PanelProps) => React.ReactElement
+}
+
+const PANELS: PanelEntry[] = [
+  { slug: 'marca', label: 'Marca y menú', Panel: BrandNavPanel },
+  { slug: 'inicio', label: 'Inicio', Panel: HeroPanel },
+  { slug: 'editor', label: 'Editor', Panel: EditorPanel },
+  { slug: 'catalogo', label: 'Catálogo', Panel: CatalogPanel },
+  { slug: 'como-funciona', label: 'Cómo funciona', Panel: HowItWorksPanel },
+  { slug: 'contacto', label: 'Contacto', Panel: ContactPanel },
+  { slug: 'pie', label: 'Pie', Panel: FooterPanel },
 ]
 
+const DEFAULT_SLUG = PANELS[0].slug
+
+type DashboardContext = PanelProps & {
+  onChangePassword: (current: string, next: string) => Promise<boolean>
+  onLogout: () => void
+  resetAll: () => Promise<void>
+}
+
 export function AdminApp() {
-  const { isAuthed, login, logout, changePassword, hasCustomPassword } = useAuth()
+  const { isAuthed, loading, login, logout, changePassword, hasCustomPassword } = useAuth()
+
+  if (loading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-brand-black">
+        <p className="text-xs font-bold uppercase tracking-widest text-brand-cyan">Cargando...</p>
+      </div>
+    )
+  }
 
   if (!isAuthed) {
     return <Login onSubmit={login} hasCustomPassword={hasCustomPassword} />
   }
 
-  return <Dashboard onLogout={logout} onChangePassword={changePassword} />
+  return (
+    <Routes>
+      <Route
+        element={<Dashboard onLogout={logout} onChangePassword={changePassword} />}
+      >
+        <Route index element={<Navigate to={DEFAULT_SLUG} replace />} />
+        {PANELS.map((entry) => (
+          <Route
+            key={entry.slug}
+            path={entry.slug}
+            element={<PanelRoute Panel={entry.Panel} />}
+          />
+        ))}
+        <Route path="seguridad" element={<SecurityPanel />} />
+        <Route
+          path="*"
+          element={<AdminNotFound to={`/admin/${DEFAULT_SLUG}`} />}
+        />
+      </Route>
+    </Routes>
+  )
+}
+
+function PanelRoute({ Panel }: { Panel: (props: PanelProps) => React.ReactElement }) {
+  const { draft, update } = useOutletContext<DashboardContext>()
+  return <Panel draft={draft} update={update} />
 }
 
 function Dashboard({
@@ -40,16 +98,23 @@ function Dashboard({
   onChangePassword: (current: string, next: string) => Promise<boolean>
 }) {
   const { draft, dirty, update, commit, discard, resetAll } = useDraft()
-  const [tab, setTab] = useState(TABS[0].id)
   const [saved, setSaved] = useState(false)
-  const [showPassword, setShowPassword] = useState(false)
+  const [saving, setSaving] = useState(false)
+  const [saveError, setSaveError] = useState<string | null>(null)
+  const location = useLocation()
 
-  const ActivePanel = (TABS.find((entry) => entry.id === tab) ?? TABS[0]).Panel
-
-  const handleSave = () => {
-    commit()
-    setSaved(true)
-    window.setTimeout(() => setSaved(false), 2000)
+  const handleSave = async () => {
+    setSaving(true)
+    setSaveError(null)
+    try {
+      await commit()
+      setSaved(true)
+      window.setTimeout(() => setSaved(false), 2000)
+    } catch (error) {
+      setSaveError(error instanceof Error ? error.message : 'No se pudo guardar.')
+    } finally {
+      setSaving(false)
+    }
   }
 
   const handleDiscard = () => {
@@ -57,16 +122,12 @@ function Dashboard({
     discard()
   }
 
-  const handleReset = () => {
-    if (!window.confirm('¿Restaurar TODO el contenido a los valores originales? No se puede deshacer.'))
-      return
-    resetAll()
-  }
-
   const handleLogout = () => {
     if (dirty && !window.confirm('Tenés cambios sin guardar. ¿Salir igual?')) return
     onLogout()
   }
+
+  const context: DashboardContext = { draft, update, onChangePassword, onLogout: handleLogout, resetAll }
 
   return (
     <div className="min-h-screen">
@@ -76,7 +137,7 @@ function Dashboard({
             Panel Trama
           </h1>
           <span className="rounded-full bg-brand-surface px-2 py-0.5 text-[10px] text-brand-muted">
-            {dirty ? 'Cambios sin guardar' : saved ? 'Guardado' : 'Sin cambios'}
+            {saving ? 'Guardando...' : dirty ? 'Cambios sin guardar' : saved ? 'Guardado' : 'Sin cambios'}
           </span>
 
           <div className="ml-auto flex flex-wrap items-center gap-2">
@@ -96,56 +157,89 @@ function Dashboard({
             </button>
             <button
               type="button"
-              onClick={handleSave}
-              disabled={!dirty}
+              onClick={() => void handleSave()}
+              disabled={!dirty || saving}
               className="rounded bg-brand-cyan px-3 py-1.5 text-[11px] font-bold text-brand-black transition hover:bg-brand-pink hover:text-white disabled:opacity-40"
             >
-              Guardar
+              {saving ? 'Guardando...' : 'Guardar'}
             </button>
           </div>
         </div>
 
+        {saveError && (
+          <p role="alert" className="mx-auto max-w-5xl px-4 pb-2 text-[11px] text-brand-pink">
+            {saveError}
+          </p>
+        )}
+
         <nav className="mx-auto flex max-w-5xl gap-1 overflow-x-auto px-4 pb-2">
-          {TABS.map((entry) => (
-            <button
-              key={entry.id}
-              type="button"
-              onClick={() => setTab(entry.id)}
-              className={`whitespace-nowrap rounded-t px-3 py-1.5 text-[11px] font-semibold transition ${
-                entry.id === tab
-                  ? 'bg-brand-surface text-brand-cyan'
-                  : 'text-brand-muted hover:text-brand-light'
-              }`}
+          {PANELS.map((entry) => (
+            <NavLink
+              key={entry.slug}
+              to={`/admin/${entry.slug}`}
+              className={({ isActive }) =>
+                `whitespace-nowrap rounded-t px-3 py-1.5 text-[11px] font-semibold transition ${
+                  isActive ? 'bg-brand-surface text-brand-cyan' : 'text-brand-muted hover:text-brand-light'
+                }`
+              }
             >
               {entry.label}
-            </button>
+            </NavLink>
           ))}
+          <NavLink
+            to="/admin/seguridad"
+            className={({ isActive }) =>
+              `ml-auto whitespace-nowrap rounded-t px-3 py-1.5 text-[11px] font-semibold transition ${
+                isActive ? 'bg-brand-surface text-brand-cyan' : 'text-brand-muted hover:text-brand-light'
+              }`
+            }
+          >
+            Seguridad
+          </NavLink>
         </nav>
       </header>
 
       <main className="mx-auto max-w-5xl px-4 py-6">
-        <ActivePanel draft={draft} update={update} />
-
-        <section className="mt-8 space-y-3 rounded-lg border border-brand-line bg-brand-surface p-4">
-          <button
-            type="button"
-            onClick={() => setShowPassword((value) => !value)}
-            className="text-[11px] font-bold uppercase tracking-widest text-brand-muted transition hover:text-brand-light"
-          >
-            {showPassword ? '−' : '+'} Seguridad
-          </button>
-          {showPassword && (
-            <ChangePasswordForm onChangePassword={onChangePassword} onLogout={handleLogout} />
-          )}
-          <button
-            type="button"
-            onClick={handleReset}
-            className="text-[11px] font-semibold text-brand-muted transition hover:text-brand-pink"
-          >
-            Restaurar todo el contenido original
-          </button>
-        </section>
+        <SectionBoundary key={location.pathname}>
+          <Outlet context={context} />
+        </SectionBoundary>
       </main>
+    </div>
+  )
+}
+
+function SecurityPanel() {
+  const { onChangePassword, onLogout, resetAll } = useOutletContext<DashboardContext>()
+
+  const handleReset = () => {
+    if (
+      !window.confirm('¿Restaurar TODO el contenido a los valores originales? No se puede deshacer.')
+    )
+      return
+    void resetAll()
+  }
+
+  return (
+    <div className="space-y-4">
+      <section className="space-y-3 rounded-lg border border-brand-line bg-brand-surface p-4">
+        <h2 className="text-[11px] font-bold uppercase tracking-widest text-brand-muted">
+          Seguridad
+        </h2>
+        <ChangePasswordForm onChangePassword={onChangePassword} onLogout={onLogout} />
+      </section>
+
+      <section className="space-y-3 rounded-lg border border-brand-line bg-brand-surface p-4">
+        <h2 className="text-[11px] font-bold uppercase tracking-widest text-brand-muted">
+          Contenido
+        </h2>
+        <button
+          type="button"
+          onClick={handleReset}
+          className="text-[11px] font-semibold text-brand-muted transition hover:text-brand-pink"
+        >
+          Restaurar todo el contenido original
+        </button>
+      </section>
     </div>
   )
 }

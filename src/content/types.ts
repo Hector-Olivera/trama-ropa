@@ -38,18 +38,18 @@ export type SiteContent = {
   }
 
   nav: {
-    links: { href: string; label: string }[]
+    links: { id: string; href: string; label: string }[]
     cta: Cta
   }
 
   hero: {
     eyebrow: string
     /** Una entrada por linea del titulo; `highlight` marca la linea en cyan. */
-    titleLines: { text: string; highlight?: boolean }[]
+    titleLines: { id: string; text: string; highlight?: boolean }[]
     subtitle: string
     primary: Cta
     secondary: Cta
-    stats: { value: string; label: string }[]
+    stats: { id: string; value: string; label: string }[]
     images: MediaRef[]
   }
 
@@ -71,8 +71,8 @@ export type SiteContent = {
   howItWorks: {
     eyebrow: string
     title: RichTitle
-    steps: { title: string; body: string }[]
-    features: { title: string; body: string }[]
+    steps: { id: string; title: string; body: string }[]
+    features: { id: string; title: string; body: string }[]
     images: MediaRef[]
   }
 
@@ -88,6 +88,6 @@ export type SiteContent = {
 
   footer: {
     tagline: string
-    links: { href: string; label: string }[]
+    links: { id: string; href: string; label: string }[]
   }
 }

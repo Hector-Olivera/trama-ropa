@@ -35,8 +35,13 @@ npm run preview    # sirve dist, http://localhost:4173
 - La terminal del usuario es Git Bash, donde `git` sí funciona con normalidad.
 - No commitear salvo que el usuario lo pida explícitamente.
 - Antes de commitear: revisar `status` y `diff`, y no incluir secretos.
+- **Flujo de trabajo (branching)**:
+  - Rama estable: `main` (solo recibirá merges desde `develop`).
+  - Rama de integración: `develop`. Todas las features nacen desde `develop`.
+  - Para cada feature: crear rama `feature/<descripcion-corta>` desde `develop`, trabajar, hacer commits atómicos, pushear la rama y proporcionar al usuario la descripción/URL para abrir un PR a `develop`.
+  - Merge a `main` únicamente cuando corresponda (liberación/versionado). El propio agente **no** hace merges ni crea PRs en GitHub; solo prepara, commitea y pushea las ramas de feature, dejando al usuario el PR.
+  - **Descripción del PR**: antes de entregar la rama, escribir el título y el cuerpo del PR en `docs/PR.md` (archivo **gitignored**, un borrador local). El usuario lo copia con `Get-Content docs\PR.md | Set-Clipboard` (PowerShell) o `cat docs/PR.md | clip` (Git Bash), o lo usa con `gh pr create --body-file docs/PR.md`.
 - Rama principal: `main`. CI en GitHub Actions (`.github/workflows/ci.yml`).
-  Sin remoto todavía: al crearlo, `git remote add origin <url>` y `git push -u origin main`.
 
 ## Reglas de código
 
@@ -62,20 +67,24 @@ npm run preview    # sirve dist, http://localhost:4173
   de la app.
 - Cada test nuevo va cerca del módulo que prueba (`store.test.ts` junto a
   `store.ts`). Probar comportamiento, no implementación.
+- Los tests corren con Supabase **desactivado** (`test.env` vacío en `vitest.config.ts`),
+  para que sean deterministas aunque exista un `.env.local` con credenciales.
 
 ## Arquitectura (mapa)
 
 ```
 src/
-  content/   types.ts, defaults.ts, store.ts, ContentProvider.tsx,
+  content/   types.ts, defaults.ts, merge.ts, driver.ts, store.ts,
+             drivers/local.ts, drivers/supabase.ts, ContentProvider.tsx,
              MediaImage.tsx, useResolvedImage.ts
   admin/     AdminApp.tsx, Login.tsx, useAuth.ts, useDraft.ts,
              fields.tsx, ImageField.tsx, RepeatableList.tsx,
              RichTitleField.tsx, panels/*
   components/  Nav, Hero, Catalog, HowItWorks, Contact, Footer,
                RichTitle, editor/*
-  lib/       storage.ts, useEditor.ts, useHistory.ts, useElementSize.ts,
-             exportImage.ts, images.ts, imageFilters.ts
+  lib/       storage.ts, blobReferences.ts, env.ts, supabase.ts, useEditor.ts,
+             useHistory.ts, useElementSize.ts, exportImage.ts, images.ts,
+             imageFilters.ts
   data/      products.ts (DEFAULT_PRODUCTS)
   types.ts   tipos del editor (Layer, Design, ProductView)
 ```
@@ -84,9 +93,15 @@ src/
 
 `src/content/store.ts` y `src/admin/useAuth.ts` son el **único** punto a reemplazar
 para migrar de local-first a un backend (Supabase o propio). Mantené esas interfaces
-estables: `loadContent`/`saveContent`/`resetContent`/`uploadMedia`/`removeMedia`/
-`resolveMediaSrc` y `isAuthed`/`login`/`logout`. Los componentes del dashboard y la
-landing no deberían enterarse del backend.
+estables y **asíncronas**: `loadContent`/`saveContent`/`resetContent` devuelven
+`Promise`; `uploadMedia`/`removeMedia`/`resolveMediaSrc`/`cleanupMedia` ya lo eran.
+`store.ts` delega en un **driver** (`driver.ts` + `drivers/*`) elegido por entorno
+(`isSupabaseConfigured()` en `src/lib/env.ts`); sin credenciales usa `drivers/local.ts`
+(localStorage + IndexedDB) y con credenciales `drivers/supabase.ts` (tabla `site_content`
+jsonb + Storage `media`). El SDK de Supabase se importa **dinámicamente** (`src/lib/supabase.ts`),
+así el modo local nunca lo carga. La auth también cambia por entorno en `useAuth.ts`.
+Los componentes del dashboard y la landing no deberían enterarse del backend.
+`ContentProvider` maneja el estado `loading`/`error`/`ready`.
 
 ## Constraints del editor (no romper)
 
@@ -98,11 +113,15 @@ landing no deberían enterarse del backend.
   URL). `MediaRef` es un path de `public/` o una clave de blob. Toda `<img>` de
   contenido pasa por `MediaImage`.
 - `useResolvedImage` resuelve blobs de forma asíncrona; no mezclar con src síncrono.
+- **Blobs**: los binarios viven en IndexedDB y las refs son `trama:blob:<id>`. El GC
+  (`cleanupBlobs()` en `src/lib/storage.ts`) borra lo que no referencian el contenido ni
+  los diseños **persistidos**. Llamalo sólo con el estado ya guardado (ej. tras un commit),
+  nunca con un draft sin guardar en memoria.
 
 ## Convenciones de contenido
 
 - Todo texto/imagen editable vive en `SiteContent` (`src/content/types.ts`) y tiene
-  default en `defaults.ts`. El merge de `store.ts` combina **objetos campo a campo** y
-  **reemplaza arrays enteros** (para que borrar de verdad borre).
+  default en `defaults.ts`. El merge (`src/content/merge.ts`) combina **objetos campo a
+  campo** y **reemplaza arrays enteros** (para que borrar de verdad borre).
 - Al agregar un campo nuevo a `SiteContent`: agregarlo en `types.ts`, en
   `DEFAULT_CONTENT` y en el panel correspondiente. Así el contenido viejo no rompe.

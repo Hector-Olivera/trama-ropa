@@ -58,7 +58,9 @@ src/
 
 Seam de datos: **`src/content/store.ts`** y **`src/admin/useAuth.ts`** son el único
 punto a cambiar para migrar a un backend (Supabase o propio). El resto del código no
-se toca.
+se toca. Sin credenciales corre en modo **local-first** (localStorage + IndexedDB);
+para conectar **Supabase** seguí `docs/supabase-setup.md` y copiá `.env.example` a
+`.env.local`.
 
 ## Deploy
 
@@ -66,7 +68,25 @@ Es una SPA. En hosting estático configurá un **rewrite** de todas las rutas a
 `index.html` (si no, `/admin` da 404 en el servidor):
 
 - Netlify: `public/_redirects` con `/*  /index.html  200`
-- Vercel: `vercel.json` con un rewrite a `/index.html`
+- Vercel: `vercel.json` con un rewrite a `/index.html` (ya incluido)
+
+### Vercel
+
+1. Importá el repositorio en Vercel (framework autodetectado: **Vite**; build
+   `npm run build`; output `dist`).
+2. Cargá las variables de entorno en **Production** y **Preview** (si querés
+   conectar Supabase y el formulario de contacto):
+   - `VITE_SUPABASE_URL`
+   - `VITE_SUPABASE_ANON_KEY`
+   - `VITE_ADMIN_EMAIL`
+   - `VITE_CONTACT_ACCESS_KEY`
+3. La primera visita a la URL del deploy (`https://<proyecto>.vercel.app`) ya
+   funciona; el subdominio es gratis. Para que el login/reset de Supabase use el
+   dominio real, copiá esa URL en **Auth → URL Configuration → Site URL**.
+
+> Las `VITE_*` se hornean en el build: si cambian, hay que redeployar. La `anon`
+> key y la access key de Web3Forms son públicas por diseño.
+
 
 ## Documentación interna
 

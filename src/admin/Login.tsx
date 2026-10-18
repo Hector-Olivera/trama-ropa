@@ -1,8 +1,9 @@
 import { useState } from 'react'
 import { DEFAULT_PASSWORD } from './useAuth'
+import type { LoginResult } from './useAuth'
 
 type Props = {
-  onSubmit: (password: string) => Promise<boolean>
+  onSubmit: (password: string) => Promise<LoginResult>
   hasCustomPassword: boolean
 }
 
@@ -15,10 +16,10 @@ export function Login({ onSubmit, hasCustomPassword }: Props) {
     event.preventDefault()
     setBusy(true)
     setError(null)
-    const ok = await onSubmit(password)
+    const result = await onSubmit(password)
     setBusy(false)
-    if (!ok) {
-      setError('Contraseña incorrecta.')
+    if (!result.ok) {
+      setError(result.error ?? 'Contraseña incorrecta.')
       setPassword('')
     }
   }

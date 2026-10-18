@@ -8,55 +8,71 @@ afterEach(() => {
 })
 
 describe('loadContent', () => {
-  it('devuelve los defaults cuando no hay nada guardado', () => {
-    expect(loadContent()).toEqual(DEFAULT_CONTENT)
+  it('devuelve los defaults cuando no hay nada guardado', async () => {
+    await expect(loadContent()).resolves.toEqual(DEFAULT_CONTENT)
   })
 
-  it('mergea objetos campo a campo, sin perder campos nuevos de los defaults', () => {
+  it('mergea objetos campo a campo, sin perder campos nuevos de los defaults', async () => {
     localStorage.setItem('trama:content', JSON.stringify({ brand: { name: 'Otra' } }))
 
-    const loaded = loadContent()
+    const loaded = await loadContent()
 
     expect(loaded.brand.name).toBe('Otra')
     expect(loaded.brand.mark).toBe(DEFAULT_CONTENT.brand.mark)
     expect(loaded.hero).toEqual(DEFAULT_CONTENT.hero)
   })
 
-  it('reemplaza arrays enteros, para que borrar de verdad borre', () => {
+  it('reemplaza arrays enteros, para que borrar de verdad borre', async () => {
     localStorage.setItem('trama:content', JSON.stringify({ nav: { links: [] } }))
 
-    const loaded = loadContent()
+    const loaded = await loadContent()
 
     expect(loaded.nav.links).toEqual([])
     expect(loaded.nav.cta).toEqual(DEFAULT_CONTENT.nav.cta)
   })
 
-  it('cae a los defaults si el JSON guardado esta corrupto', () => {
+  it('asigna ids estables a items guardados antes de que existieran', async () => {
+    localStorage.setItem(
+      'trama:content',
+      JSON.stringify({
+        nav: { links: [{ href: '#uno', label: 'Uno' }] },
+        footer: { links: [{ href: '#dos', label: 'Dos' }] },
+      }),
+    )
+
+    const loaded = await loadContent()
+
+    expect(loaded.nav.links[0].id).toBeTruthy()
+    expect(loaded.nav.links[0]).toMatchObject({ href: '#uno', label: 'Uno' })
+    expect(loaded.footer.links[0].id).toBeTruthy()
+  })
+
+  it('cae a los defaults si el JSON guardado esta corrupto', async () => {
     localStorage.setItem('trama:content', '{no es json')
 
-    expect(loadContent()).toEqual(DEFAULT_CONTENT)
+    await expect(loadContent()).resolves.toEqual(DEFAULT_CONTENT)
   })
 })
 
 describe('saveContent', () => {
-  it('persiste y loadContent lo devuelve igual', () => {
+  it('persiste y loadContent lo devuelve igual', async () => {
     const next = {
       ...DEFAULT_CONTENT,
       brand: { ...DEFAULT_CONTENT.brand, name: 'Trama Test' },
     }
 
-    saveContent(next)
+    await saveContent(next)
 
-    expect(loadContent()).toEqual(next)
+    await expect(loadContent()).resolves.toEqual(next)
   })
 })
 
 describe('resetContent', () => {
-  it('borra lo guardado y vuelve a los defaults', () => {
-    saveContent({ ...DEFAULT_CONTENT, brand: { ...DEFAULT_CONTENT.brand, name: 'X' } })
+  it('borra lo guardado y vuelve a los defaults', async () => {
+    await saveContent({ ...DEFAULT_CONTENT, brand: { ...DEFAULT_CONTENT.brand, name: 'X' } })
 
-    resetContent()
+    await resetContent()
 
-    expect(loadContent()).toEqual(DEFAULT_CONTENT)
+    await expect(loadContent()).resolves.toEqual(DEFAULT_CONTENT)
   })
 })

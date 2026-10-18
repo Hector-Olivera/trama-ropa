@@ -1,10 +1,11 @@
 import { RepeatableList } from '../RepeatableList'
 import { SectionCard, TextField } from '../fields'
+import { newId } from '../../lib/id'
+import { useSection } from './useSection'
 import type { PanelProps } from './types'
 
 export function FooterPanel({ draft, update }: PanelProps) {
-  const setFooter = (patch: Partial<(typeof draft)['footer']>) =>
-    update((d) => ({ ...d, footer: { ...d.footer, ...patch } }))
+  const setFooter = useSection(update, 'footer')
 
   return (
     <div className="space-y-4">
@@ -17,7 +18,7 @@ export function FooterPanel({ draft, update }: PanelProps) {
         <RepeatableList
           items={draft.footer.links}
           onChange={(links) => setFooter({ links })}
-          create={() => ({ href: '#', label: 'Nuevo link' })}
+          create={() => ({ id: newId(), href: '#', label: 'Nuevo link' })}
           label={(item) => item.label || 'Link'}
           addLabel="Agregar link"
           render={(item, updateItem) => (

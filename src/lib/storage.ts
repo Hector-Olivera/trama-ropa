@@ -10,11 +10,14 @@
  * al recargar la pagina y un diseño guardado dejaria de abrir. El paso a object
  * URL se hace en el momento de dibujar, con un cache.
  */
-import { del, get, set } from 'idb-keyval'
+import { del, get, keys, set } from 'idb-keyval'
 import type { Design } from '../types'
+import { collectStoredBlobRefs, isBlobRef } from './blobReferences'
+import { BLOB_PREFIX, STORAGE_KEYS } from './storage-keys'
 
-const DESIGNS_KEY = 'trama:designs'
-const BLOB_PREFIX = 'trama:blob:'
+const DESIGNS_KEY = STORAGE_KEYS.designs
+
+export { isBlobRef }
 
 function readDesigns(): Design[] {
   try {
@@ -46,40 +49,10 @@ export function saveDesign(design: Design): void {
 }
 
 export function deleteDesign(id: string): void {
-  const designs = readDesigns()
-  const design = designs.find((item) => item.id === id)
-
-  // Los blobs solo se borran si ningun otro diseño los referencia.
-  const blobIdsInUse = new Set(
-    designs
-      .filter((item) => item.id !== id)
-      .flatMap((item) =>
-        item.layers
-          .filter((layer) => layer.type === 'image' && layer.src.startsWith(BLOB_PREFIX))
-          .map((layer) => (layer.type === 'image' ? layer.src : '')),
-      )
-      .filter(Boolean),
-  )
-
-  if (design) {
-    for (const layer of design.layers) {
-      if (layer.type !== 'image' || !layer.src.startsWith(BLOB_PREFIX)) continue
-      const blobId = layer.src.slice(BLOB_PREFIX.length)
-      if (!blobIdsInUse.has(layer.src)) {
-        objectUrlCache.delete(layer.src)
-        void del(blobId)
-      }
-    }
-  }
-
-  writeDesigns(designs.filter((item) => item.id !== id))
+  writeDesigns(readDesigns().filter((item) => item.id !== id))
 }
 
 // --- Binarios ---
-
-export function isBlobRef(src: string): boolean {
-  return src.startsWith(BLOB_PREFIX)
-}
 
 export async function putLogoBlob(blob: Blob): Promise<string> {
   const id = crypto.randomUUID()
@@ -114,4 +87,33 @@ export async function deleteBlobRef(src: string): Promise<void> {
     objectUrlCache.delete(src)
   }
   await del(src.slice(BLOB_PREFIX.length))
+}
+
+async function listBlobIds(): Promise<string[]> {
+  const all = await keys()
+  return all.filter((key): key is string => typeof key === 'string')
+}
+
+/**
+ * Borra de IndexedDB todo blob que no esté en `referenced`. Devuelve las claves
+ * (`trama:blob:<id>`) que se borraron.
+ */
+export async function pruneOrphanBlobs(referenced: Set<string>): Promise<string[]> {
+  const removed: string[] = []
+  for (const id of await listBlobIds()) {
+    const ref = `${BLOB_PREFIX}${id}`
+    if (referenced.has(ref)) continue
+    await deleteBlobRef(ref)
+    removed.push(ref)
+  }
+  return removed
+}
+
+/**
+ * Recolector de basura de imágenes: compara los blobs guardados contra lo que
+ * referencian el contenido y los diseños PERSISTIDOS, y borra el resto. Llamar
+ * sólo con el estado ya guardado (no con un draft sin guardar en memoria).
+ */
+export async function cleanupBlobs(): Promise<string[]> {
+  return pruneOrphanBlobs(collectStoredBlobRefs())
 }

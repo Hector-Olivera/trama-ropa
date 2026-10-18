@@ -1,80 +1,74 @@
 # MEMORY.md
 
-Bitácora de decisiones, limitaciones conocidas y roadmap. No borrar entradas: si algo
-cambia, agregar una nueva con fecha. `AGENTS.md` tiene las reglas de trabajo; acá va el
-**por qué** y lo que hay que recordar.
+Doc vivo con el **por qué** y lo que hay que recordar. Sin bitácora cronológica: si algo
+cambia, se reescribe acá. `AGENTS.md` tiene las reglas de trabajo y los comandos.
 
-## Estado actual
+## Estado
 
-- Landing + editor + panel `/admin` funcionando. `tsc -b`, `lint` y `build` limpios.
-- Persistencia **local-first**: contenido en `localStorage`, imágenes en `IndexedDB`.
-- Assets optimizados con `scripts/optimize-assets.mjs` (originales 60 MB → ~5 MB en
-  `public/`). Los originales viven fuera del repo (carpeta `Estampados/`); **no
-  modificar**.
-- Sin backend, sin tests, sin CI. Repo git local (sin remoto).
+- Landing + editor (Konva) + panel `/admin` (content-driven). Vite + React 19 + TS strict +
+  Tailwind 4 + react-router 7.
+- Persistencia **local-first** por defecto; con credenciales corre contra **Supabase**
+  (fases D1/D2 hechas). SPA desplegable en Vercel (`vercel.json` con rewrite).
+- Repo `Hector-Olivera/trama-ropa`. Ramas `main` (estable) / `develop` (integración).
+  CI (lint + typecheck + test + build) en PR/push a `main` y `develop`.
 
-## Decisiones
+## Arquitectura (recordar)
 
-- **2026-10-14** — Repo local en `main`, un único commit inicial. GitHub y CI quedan
-  para la **Fase B**. Git se invoca por ruta completa desde PowerShell (ver AGENTS.md).
-- **2026-10-14** — Se documenta con `README.md`, `AGENTS.md` y `MEMORY.md`.
-- **2026-10-14** — El panel se protege con un candado **local** (SHA-256 en
-  localStorage, pass inicial `trama`). **No es seguridad real**; se reemplaza por auth
-  real en la Fase D.
-- **2026-10-14** — Se descartan las "zonas de impresión" del editor: se puede estampar
-  en cualquier parte de la prenda. Las prendas base ahora son editables desde el admin.
-- **2026-10-14** — **Fase B**: se suma **Vitest** (entorno `node`; `jsdom` por archivo
-  con docblock) + `jsdom` + `@testing-library/react`. Tests junto al módulo, en
-  `src/**/*.test.ts(x)`. Se crea `tsconfig.test.json` (extiende el app + tipos de Node)
-  para que `tsc -b` typechequee tests sin filtrar APIs de Node al código de la app.
-  Se agrega CI en `.github/workflows/ci.yml` (lint + typecheck + test + build en Node 24).
-- **2026-10-14** — **GitHub CLI (`gh`) no está instalado** y no hay remoto. Para subir
-  el repo hay que: instalar `gh` (y `gh auth login`), o crear el repo vacío en
-  github.com a mano y pasarnos la URL para `git remote add origin ... && git push -u`.
-  Mientras tanto, los commits locales en `main` no se pierden.
+- **Seam de datos**: `src/content/store.ts` y `src/admin/useAuth.ts` son el **único** punto a
+  reemplazar para cambiar de backend. Interfaces **asíncronas**. `store.ts` delega en un
+  **driver** (`driver.ts` + `drivers/local.ts` | `drivers/supabase.ts`) elegido por
+  `isSupabaseConfigured()`. El SDK de Supabase se importa **dinámicamente**
+  (`src/lib/supabase.ts`), así el modo local no lo carga.
+- **Contenido**: todo texto/imagen editable vive en `SiteContent` (`content/types.ts`) con
+  default en `defaults.ts`. El merge (`content/merge.ts`) combina **objetos campo a campo** y
+  **reemplaza arrays enteros** (borrar de verdad borra). Campo nuevo → `types.ts` +
+  `DEFAULT_CONTENT` + panel. `ContentProvider` maneja `loading`/`error`/`ready`.
+- **Editor (no romper)**: filtros de imagen con `ctx.filter` (`lib/imageFilters.ts`), **no**
+  `Konva.Filters` + `cache()` (rompe el `Transformer`); texto con `<textarea>` DOM
+  (`TextOverlay`), no `Konva.Text`; la prenda base se dibuja con `useLoadedImage` (resuelve el
+  `MediaRef`), nunca con el src crudo.
+- **Imágenes**: en el documento se guarda la clave `trama:blob:<id>` (nunca un object URL).
+  Binarios en IndexedDB; `MediaRef` = path de `public/` o clave de blob; toda `<img>` de
+  contenido pasa por `MediaImage`. El GC `cleanupBlobs()` (`lib/storage.ts`) borra lo que no
+  referencian el contenido ni los diseños **persistidos**; se corre sólo contra el estado ya
+  guardado, nunca con un draft en memoria.
+- **Centros**: claves de storage en `src/lib/storage-keys.ts`; ids estables de listas en
+  `src/lib/id.ts` (`loadContent` migra contenido viejo sin ids).
 
-## Backend: decisión pendiente (Supabase vs propio) — evaluar en Fase D
+## Supabase
 
-- Requisito del usuario: que podamos **alojarlo gratis** y tener los **mismos
-  beneficios** que Supabase (auth, DB, storage de imágenes, API).
-- Principio de diseño desde ya: mantener el **seam de datos genérico**
-  (`src/content/store.ts` + `src/admin/useAuth.ts`) para poder cambiar de backend sin
-  tocar componentes. Preferir una interfaz de repositorio/auth por encima de funciones
-  sueltas.
-- Opciones a evaluar: Supabase (todo-en-uno, free tier) vs. propio (ej. Node/Fastify +
-  Postgres gestionado gratis [Neon] + storage S3-compatible [Cloudflare R2] + auth
-  propia, hosteado en Render/Railway/Fly). Decidir con costos y mantenimiento sobre la
-  mesa.
+- Contenido en la tabla `site_content` (fila `id=1`, columna `content` jsonb) con RLS (lectura
+  pública, escritura autenticada). Imágenes en el bucket público `media`; la ref guardada es
+  la **URL pública**. Los diseños del editor siguen locales.
+- Auth del admin con email fijo `VITE_ADMIN_EMAIL` + contraseña (el Login sólo pide la
+  contraseña y muestra el error real vía `mapAuthError`). Recuperación de contraseña **sólo**
+  desde el dashboard de Supabase (sin botón en la app).
+- `VITE_SUPABASE_URL` es la **Project URL** (`https://<ref>.supabase.co`), **sin** `/rest/v1`
+  ni barra final: el SDK preserva el path del base y un `/rest/v1` rompe auth. Se arranca **de
+  cero** en la nube (el primer guardado crea la fila).
+- Guía completa: `docs/supabase-setup.md`. Sin credenciales, la app sigue en local.
 
-## Limitaciones / deuda técnica conocida
+## Contacto
 
-- **Auth de admin solo en cliente** (no es seguridad real).
-- **Sin tests** (falta Vitest; prioridad Fase B). Nada cubre `mergeContent`, `useEditor`
-  /`useHistory` ni `exportImage`.
-- **Sin CI** que imponga lint + typecheck + build.
-- **Blobs huérfanos**: al reemplazar/quitar una imagen no se borra el blob viejo de
-  IndexedDB (fuga gradual). Revisar en Fase C.
-- `RepeatableList` usa `key={index}` → posible bug sutil al reordenar. Fase C.
-- Claves/prefix de storage (`trama:content`, `trama:blob:`, `trama:admin:*`) dispersas;
-  conviene centralizarlas. Fase C.
-- `SiteContent.version` existe pero el merge todavía no lo usa para migraciones.
-- Deploy: en hosting estático hace falta **rewrite SPA** (`/admin` da 404 si no).
+- El formulario usa **Web3Forms** (sin backend; `VITE_CONTACT_ACCESS_KEY`, pública). El card
+  de email es un `mailto:` (abre el cliente de correo; el "elegí una app" es del SO, no un bug).
 
-## Roadmap
+## Deploy
 
-- **Fase A (hecha)** — Higiene base: git local + `.gitignore` + commit inicial,
-  documentación (README/AGENTS/MEMORY), `ErrorBoundary` y ruta `NotFound`.
-- **Fase B (en curso)** — Calidad: **Vitest + tests + CI hechos**. Falta: crear el
-  **repo en GitHub** y pushear (bloqueado: no hay `gh` instalado; ver nota).
-- **Fase C** — Refactors chicos: claves de storage centralizadas, `RepeatableList` con
-  id estable, admin por rutas (`/admin/hero`, …) en vez de tabs con `useState`, helper
-  genérico de sección en los paneles, error boundaries por sección.
-- **Fase D** — Backend: decidir Supabase vs propio, esquema de contenido + storage de
-  imágenes + auth real; swap del seam.
+- **Vercel**: SPA con rewrite de todas las rutas a `index.html` (`vercel.json`). Build
+  `npm run build`, output `dist`; las `VITE_*` se hornean en el build (cargarlas en el host).
+  Tras desplegar, la Site URL de Supabase Auth debe ser la URL del sitio.
+
+## Limitaciones / deuda
+
+- Modo local: el candado del admin es del cliente (SHA-256 en localStorage, pass inicial
+  `trama`), **no es seguridad real**. Con Supabase la auth es real.
+- `SiteContent.version` existe pero el merge no lo usa para migraciones.
+- Tests: `pool: 'threads'` (los forks timeoutean al iniciar workers en Windows); `jsdom` por
+  archivo con docblock; las `VITE_*` van vacías en `vitest.config.ts` para que `.env.local`
+  no rompa el aislamiento.
 
 ## Skills / MCP
 
-- **2026-10-14** — Por ahora no se instalan skills ni MCP (decisión del usuario).
-- Candidatos a futuro: **MCP de navegador (Playwright)** para verificar UI/E2E (el
-  agente no puede ver imágenes), **GitHub MCP** (repo/PRs), **Supabase MCP** (si ese es
-  el backend).
+- No instalados (decisión del usuario). Candidatos: **Playwright MCP** (verificar UI/E2E),
+  **GitHub MCP**, **Supabase MCP**.

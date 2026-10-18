@@ -2,13 +2,13 @@ import { ImageField } from '../ImageField'
 import { RepeatableList } from '../RepeatableList'
 import { SectionCard, SelectField, TextField } from '../fields'
 import { RichTitleField } from '../RichTitleField'
+import { useSection } from './useSection'
 import type { PanelProps } from './types'
 
 export function CatalogPanel({ draft, update }: PanelProps) {
   const groups = draft.catalog.groups
 
-  const setCatalog = (patch: Partial<(typeof draft)['catalog']>) =>
-    update((d) => ({ ...d, catalog: { ...d.catalog, ...patch } }))
+  const setCatalog = useSection(update, 'catalog')
 
   const groupOptions = groups.map((group) => ({ value: group.id, label: group.label }))
 

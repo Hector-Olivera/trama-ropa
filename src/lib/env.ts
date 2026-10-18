@@ -1,7 +1,7 @@
 /**
- * Configuracion leida del entorno (Vite). Ver `docs/supabase-setup.md` y
- * `.env.example`. Las claves son publicas (la anon key de Supabase va al cliente
- * a proposito): la seguridad real vive en las RLS del proyecto.
+ * Configuracion leida del entorno (Vite). Ver `.env.example`. Las claves son publicas
+ * (la anon key de Supabase va al cliente a proposito): la seguridad real vive en las
+ * RLS del proyecto.
  */
 export const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL?.trim() ?? ''
 export const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY?.trim() ?? ''

@@ -1,6 +1,7 @@
 import { lazy, Suspense } from 'react'
 import { Catalog } from './components/Catalog'
 import { Contact } from './components/Contact'
+import { EditorProductsProvider } from './components/EditorProducts'
 import { Footer } from './components/Footer'
 import { Hero } from './components/Hero'
 import { HowItWorks } from './components/HowItWorks'
@@ -30,23 +31,25 @@ export function Landing() {
         <Nav />
       </SectionBoundary>
       <main>
-        <SectionBoundary id="inicio">
-          <Hero />
-        </SectionBoundary>
-        <SectionBoundary id="editor">
-          <Suspense fallback={<EditorFallback />}>
-            <EditorSection />
-          </Suspense>
-        </SectionBoundary>
-        <SectionBoundary id="catalogo">
-          <Catalog />
-        </SectionBoundary>
-        <SectionBoundary>
-          <HowItWorks />
-        </SectionBoundary>
-        <SectionBoundary id="contacto">
-          <Contact />
-        </SectionBoundary>
+        <EditorProductsProvider>
+          <SectionBoundary id="inicio">
+            <Hero />
+          </SectionBoundary>
+          <SectionBoundary id="editor">
+            <Suspense fallback={<EditorFallback />}>
+              <EditorSection />
+            </Suspense>
+          </SectionBoundary>
+          <SectionBoundary id="catalogo">
+            <Catalog />
+          </SectionBoundary>
+          <SectionBoundary>
+            <HowItWorks />
+          </SectionBoundary>
+          <SectionBoundary id="contacto">
+            <Contact />
+          </SectionBoundary>
+        </EditorProductsProvider>
       </main>
       <SectionBoundary>
         <Footer />

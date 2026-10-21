@@ -6,6 +6,7 @@ import { deleteDesign, cleanupBlobs, listDesigns, saveDesign } from '../../lib/s
 import { useEditor } from '../../lib/useEditor'
 import { useElementSize } from '../../lib/useElementSize'
 import type { ExportFormat, ExportScale, Layer, ProductView } from '../../types'
+import { useEditorProducts } from '../EditorProducts'
 import { EditorCanvas, type CanvasMetrics } from './EditorCanvas'
 import { EditorToolbar } from './EditorToolbar'
 import { LayersPanel } from './LayersPanel'
@@ -26,7 +27,7 @@ const isTypingTarget = (target: EventTarget | null): boolean =>
 
 export function EditorSection() {
   const { content } = useContent()
-  const products = content.editor.products
+  const { products, selectedId: productId, select } = useEditorProducts()
 
   // El autosave se lee una sola vez y siembra el estado inicial. Hacerlo en un
   // effect seria un setState en render, que la regla react-hooks v7 marca.
@@ -35,7 +36,6 @@ export function EditorSection() {
     return autosave && autosave.layers.length > 0 ? autosave : null
   })
 
-  const [productId, setProductId] = useState(boot?.productId ?? products[0]?.id ?? '')
   const product: ProductView | undefined = useMemo(
     () => products.find((item) => item.id === productId) ?? products[0],
     [products, productId],
@@ -201,7 +201,7 @@ export function EditorSection() {
   const handleLoad = (id: string) => {
     const design = saved.find((item) => item.id === id)
     if (!design) return
-    setProductId(design.productId)
+    select(design.productId)
     setDesignName(design.name)
     editor.loadLayers(design.layers)
   }
@@ -241,7 +241,7 @@ export function EditorSection() {
                 <ProductPicker
                   products={products}
                   productId={productId}
-                  onChange={setProductId}
+                  onChange={select}
                   layerCount={editor.layers.length}
                 />
                 <LogoUploader onAdd={editor.addImageLayer} />

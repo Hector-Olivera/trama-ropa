@@ -16,6 +16,7 @@ Thumbs.db
 node_modules/.tmp
 
 docs/PR.md
+docs/*.local.md
 
 .vscode/*
 !.vscode/settings.json

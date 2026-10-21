@@ -15,6 +15,8 @@ type Props = {
   canAttach: boolean
   onAttach: () => void
   attachState: AttachmentStatus
+  /** Lleva hasta "Mis disenos" para bautizar el diseño. */
+  onSaveJump: () => void
 }
 
 export function EditorToolbar({
@@ -29,6 +31,7 @@ export function EditorToolbar({
   canAttach,
   onAttach,
   attachState,
+  onSaveJump,
 }: Props) {
   const [scale, setScale] = useState<ExportScale>(2)
   const [format, setFormat] = useState<ExportFormat>('png')
@@ -73,6 +76,14 @@ export function EditorToolbar({
             <option value={3}>3x</option>
           </select>
         </label>
+
+        <button
+          type="button"
+          onClick={onSaveJump}
+          className="rounded-md border border-brand-line bg-brand-surface px-3.5 py-1.5 text-xs font-bold text-brand-light transition hover:border-brand-cyan hover:text-brand-cyan"
+        >
+          Guardar
+        </button>
 
         <button
           type="button"

@@ -3,6 +3,7 @@ import type Konva from 'konva'
 import { useContent } from '../../content/ContentProvider'
 import { exportDesign, renderDesignBlob } from '../../lib/exportImage'
 import { isSupabaseConfigured } from '../../lib/env'
+import { scrollToId } from '../../lib/scrollToId'
 import { deleteDesign, cleanupBlobs, listDesigns, saveDesign } from '../../lib/storage'
 import { useEditor } from '../../lib/useEditor'
 import { useElementSize } from '../../lib/useElementSize'
@@ -51,6 +52,7 @@ export function EditorSection() {
   const [exporting, setExporting] = useState(false)
   const [designName, setDesignName] = useState(boot?.name ?? 'Mi diseño')
   const [saved, setSaved] = useState(() => listDesigns())
+  const [highlightSaved, setHighlightSaved] = useState(false)
 
   const signature = useMemo(
     () => signatureOf(productId, designName, editor.layers),
@@ -207,6 +209,11 @@ export function EditorSection() {
     })
   }, [attachment, metrics, product])
 
+  const handleSaveJump = () => {
+    setHighlightSaved(true)
+    scrollToId('mis-disenos')
+  }
+
   const handleSaveVersion = () => {
     saveDesign({
       id: crypto.randomUUID(),
@@ -217,6 +224,7 @@ export function EditorSection() {
       updatedAt: Date.now(),
     })
     setSaved(listDesigns())
+    setHighlightSaved(false)
   }
 
   const handleLoad = (id: string) => {
@@ -288,6 +296,7 @@ export function EditorSection() {
                   canAttach={isSupabaseConfigured()}
                   onAttach={handleAttach}
                   attachState={attachment.status}
+                  onSaveJump={handleSaveJump}
                 />
 
                 <div ref={shellRef} className="relative">
@@ -345,6 +354,7 @@ export function EditorSection() {
               versions={versions}
               name={designName}
               saveState={saveState}
+              highlight={highlightSaved}
               onNameChange={setDesignName}
               onSave={handleSaveVersion}
               onLoad={handleLoad}
@@ -361,6 +371,7 @@ type SavedProps = {
   versions: ReturnType<typeof listDesigns>
   name: string
   saveState: 'idle' | 'saving' | 'saved'
+  highlight: boolean
   onNameChange: (value: string) => void
   onSave: () => void
   onLoad: (id: string) => void
@@ -371,13 +382,21 @@ function SavedDesigns({
   versions,
   name,
   saveState,
+  highlight,
   onNameChange,
   onSave,
   onLoad,
   onDelete,
 }: SavedProps) {
   return (
-    <div className="mt-8 rounded-lg border border-brand-line bg-brand-surface p-4">
+    <div
+      id="mis-disenos"
+      className={`mt-8 scroll-mt-20 rounded-lg border p-4 transition ${
+        highlight
+          ? 'border-brand-cyan bg-brand-cyan/5 ring-2 ring-brand-cyan/70'
+          : 'border-brand-line bg-brand-surface'
+      }`}
+    >
       <div className="flex flex-wrap items-center gap-2">
         <h3 className="text-[11px] font-bold uppercase tracking-widest text-brand-muted">
           Mis diseños

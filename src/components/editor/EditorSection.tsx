@@ -1,11 +1,13 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type Konva from 'konva'
 import { useContent } from '../../content/ContentProvider'
-import { exportDesign } from '../../lib/exportImage'
+import { exportDesign, renderDesignBlob } from '../../lib/exportImage'
+import { isSupabaseConfigured } from '../../lib/env'
 import { deleteDesign, cleanupBlobs, listDesigns, saveDesign } from '../../lib/storage'
 import { useEditor } from '../../lib/useEditor'
 import { useElementSize } from '../../lib/useElementSize'
 import type { ExportFormat, ExportScale, Layer, ProductView } from '../../types'
+import { useDesignAttachment } from '../DesignAttachment'
 import { useEditorProducts } from '../EditorProducts'
 import { EditorCanvas, type CanvasMetrics } from './EditorCanvas'
 import { EditorToolbar } from './EditorToolbar'
@@ -28,6 +30,7 @@ const isTypingTarget = (target: EventTarget | null): boolean =>
 export function EditorSection() {
   const { content } = useContent()
   const { products, selectedId: productId, select } = useEditorProducts()
+  const attachment = useDesignAttachment()
 
   // El autosave se lee una sola vez y siembra el estado inicial. Hacerlo en un
   // effect seria un setState en render, que la regla react-hooks v7 marca.
@@ -186,6 +189,24 @@ export function EditorSection() {
     [designName, metrics, product],
   )
 
+  const handleAttach = useCallback(() => {
+    const stage = stageRef.current
+    if (!stage || !product) return
+    void attachment.attach(async () => {
+      const { blob } = await renderDesignBlob(
+        stage,
+        {
+          displayScale: metrics.scale,
+          offsetX: metrics.offsetX,
+          offsetY: metrics.offsetY,
+        },
+        product,
+        { scale: 1, format: 'png' },
+      )
+      return blob
+    })
+  }, [attachment, metrics, product])
+
   const handleSaveVersion = () => {
     saveDesign({
       id: crypto.randomUUID(),
@@ -264,6 +285,9 @@ export function EditorSection() {
                   onClear={editor.clearLayers}
                   onExport={handleExport}
                   exporting={exporting}
+                  canAttach={isSupabaseConfigured()}
+                  onAttach={handleAttach}
+                  attachState={attachment.status}
                 />
 
                 <div ref={shellRef} className="relative">

@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import type { ExportFormat, ExportScale } from '../../types'
+import type { AttachmentStatus } from '../DesignAttachment'
 
 type Props = {
   canUndo: boolean
@@ -10,6 +11,10 @@ type Props = {
   onClear: () => void
   onExport: (options: { scale: ExportScale; format: ExportFormat }) => void
   exporting: boolean
+  /** Adjunto al mail. En local no hay donde subirlo, y ahi se oculta. */
+  canAttach: boolean
+  onAttach: () => void
+  attachState: AttachmentStatus
 }
 
 export function EditorToolbar({
@@ -21,6 +26,9 @@ export function EditorToolbar({
   onClear,
   onExport,
   exporting,
+  canAttach,
+  onAttach,
+  attachState,
 }: Props) {
   const [scale, setScale] = useState<ExportScale>(2)
   const [format, setFormat] = useState<ExportFormat>('png')
@@ -74,6 +82,21 @@ export function EditorToolbar({
         >
           {exporting ? 'Exportando...' : 'Descargar'}
         </button>
+
+        {canAttach && (
+          <button
+            type="button"
+            onClick={onAttach}
+            disabled={!hasLayers || attachState === 'rendering' || attachState === 'uploading'}
+            className="rounded-md border border-brand-line bg-brand-surface px-3.5 py-1.5 text-xs font-bold text-brand-light transition hover:border-brand-cyan hover:text-brand-cyan disabled:cursor-not-allowed disabled:opacity-40"
+          >
+            {attachState === 'rendering' || attachState === 'uploading'
+              ? 'Preparando...'
+              : attachState === 'ready'
+                ? 'Adjunto listo'
+                : 'Adjuntar al mail'}
+          </button>
+        )}
       </div>
     </div>
   )

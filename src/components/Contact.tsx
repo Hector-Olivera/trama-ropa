@@ -1,9 +1,11 @@
 import { useContent } from '../content/ContentProvider'
 import { RichTitle } from './RichTitle'
+import { useDesignAttachment } from './DesignAttachment'
 import { useState } from 'react'
 
 export function Contact() {
   const { content } = useContent()
+  const { attachment, clear, status: attachStatus, error: attachError } = useDesignAttachment()
   const { contact } = content
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
@@ -22,6 +24,8 @@ export function Contact() {
     try {
       const formData = new FormData(event.currentTarget)
       const payload = Object.fromEntries(formData.entries())
+      // Web3Forms no admite archivos, asi que el diseño viaja como enlace firmado.
+      if (attachment) payload.message = `${String(payload.message ?? '')}\n\nMi diseño: ${attachment.url}`
       const res = await fetch('https://api.web3forms.com/submit', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
@@ -184,6 +188,35 @@ export function Contact() {
             />
           </div>
 
+          {attachment && (
+            <div className="flex items-center gap-3 rounded border border-brand-line bg-brand-black/40 p-2">
+              <img
+                src={attachment.previewUrl}
+                alt="Vista previa del diseño"
+                className="h-11 w-11 shrink-0 rounded object-cover"
+              />
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-xs font-semibold text-brand-light">Diseño adjunto</p>
+                <a
+                  href={attachment.url}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="text-[11px] text-brand-cyan underline underline-offset-2"
+                >
+                  Abrir enlace (vence en 7 días)
+                </a>
+              </div>
+              <button
+                type="button"
+                onClick={clear}
+                aria-label="Quitar el diseño adjunto"
+                className="rounded border border-brand-line px-2 py-1 text-[10px] uppercase tracking-wider text-brand-muted transition hover:border-brand-pink hover:text-brand-pink"
+              >
+                Quitar
+              </button>
+            </div>
+          )}
+
           <button
             type="submit"
             disabled={sending}
@@ -200,6 +233,11 @@ export function Contact() {
           {err && (
             <p role="alert" className="text-[11px] text-brand-pink">
               {err}
+            </p>
+          )}
+          {attachStatus === 'error' && attachError && (
+            <p role="alert" className="text-[11px] text-brand-pink">
+              {attachError}
             </p>
           )}
 

@@ -3,18 +3,48 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { Contact } from './Contact'
 import { ContentProvider } from '../content/ContentProvider'
+import { DesignAttachmentContext, DesignAttachmentProvider } from './DesignAttachment'
+import type { DesignAttachmentValue } from './DesignAttachment'
 
 afterEach(() => {
   cleanup()
   vi.unstubAllGlobals()
 })
 
-function renderContact() {
+function attachmentValue(overrides: Partial<DesignAttachmentValue> = {}): DesignAttachmentValue {
+  return {
+    status: 'ready',
+    attachment: {
+      url: 'https://supabase.test/sign/diseno-abc.png?t=firma',
+      previewUrl: 'blob:preview',
+    },
+    error: null,
+    attach: vi.fn(async () => {}),
+    clear: vi.fn(),
+    ...overrides,
+  }
+}
+
+function renderContact(attachment?: DesignAttachmentValue) {
   render(
     <ContentProvider>
-      <Contact />
+      <DesignAttachmentProvider>
+        {attachment ? (
+          <DesignAttachmentContext.Provider value={attachment}>
+            <Contact />
+          </DesignAttachmentContext.Provider>
+        ) : (
+          <Contact />
+        )}
+      </DesignAttachmentProvider>
     </ContentProvider>,
   )
+}
+
+async function fillForm(message: string) {
+  fireEvent.change(await screen.findByLabelText('Nombre'), { target: { value: 'Juan' } })
+  fireEvent.change(screen.getByLabelText('Email'), { target: { value: 'juan@test.com' } })
+  fireEvent.change(screen.getByLabelText('¿Qué necesitás?'), { target: { value: message } })
 }
 
 describe('Contact', () => {
@@ -26,9 +56,7 @@ describe('Contact', () => {
 
     renderContact()
 
-    fireEvent.change(await screen.findByLabelText('Nombre'), { target: { value: 'Juan' } })
-    fireEvent.change(screen.getByLabelText('Email'), { target: { value: 'juan@test.com' } })
-    fireEvent.change(screen.getByLabelText('¿Qué necesitás?'), { target: { value: '20 remeras' } })
+    await fillForm('20 remeras')
 
     fireEvent.click(screen.getByRole('button', { name: 'Enviar consulta' }))
 
@@ -49,13 +77,43 @@ describe('Contact', () => {
 
     renderContact()
 
-    fireEvent.change(await screen.findByLabelText('Nombre'), { target: { value: 'Ana' } })
-    fireEvent.change(screen.getByLabelText('Email'), { target: { value: 'ana@test.com' } })
-    fireEvent.change(screen.getByLabelText('¿Qué necesitás?'), { target: { value: 'Consulta' } })
+    await fillForm('Consulta')
 
     fireEvent.click(screen.getByRole('button', { name: 'Enviar consulta' }))
 
     const alert = await screen.findByRole('alert')
     expect(alert.textContent).toContain('No se pudo enviar')
+  })
+
+  it('muestra el diseño adjunto con su enlace y lo puede quitar', async () => {
+    const attachment = attachmentValue()
+    renderContact(attachment)
+
+    expect(await screen.findByText('Diseño adjunto')).toBeTruthy()
+
+    const link = screen.getByRole('link', { name: /Abrir enlace/ })
+    expect(link.getAttribute('href')).toBe('https://supabase.test/sign/diseno-abc.png?t=firma')
+
+    fireEvent.click(screen.getByRole('button', { name: 'Quitar el diseño adjunto' }))
+    expect(attachment.clear).toHaveBeenCalledTimes(1)
+  })
+
+  it('agrega el enlace del diseño al cuerpo del mensaje', async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      json: async () => ({ success: true }),
+    } as unknown as Response)
+    vi.stubGlobal('fetch', fetchMock)
+
+    renderContact(attachmentValue())
+
+    await fillForm('20 remeras')
+
+    fireEvent.click(screen.getByRole('button', { name: 'Enviar consulta' }))
+
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1))
+
+    const body = JSON.parse(fetchMock.mock.calls[0][1]?.body as string) as { message: string }
+    expect(body.message).toContain('20 remeras')
+    expect(body.message).toContain('Mi diseño: https://supabase.test/sign/diseno-abc.png?t=firma')
   })
 })

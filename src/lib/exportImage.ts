@@ -31,6 +31,23 @@ export async function exportDesign(
   product: ProductView,
   options: ExportOptions,
 ): Promise<{ width: number; height: number }> {
+  const { blob, width, height } = await renderDesignBlob(stage, placement, product, options)
+  const filename = `${options.fileName}-${product.slug}-${options.scale}x.${options.format}`
+  downloadBlob(blob, filename)
+  return { width, height }
+}
+
+/**
+ * Lo mismo que `exportDesign` pero devuelve el archivo en vez de bajarlo, para
+ * poder subirlo al mail. Siempre sale en PNG: el adjunto de Web3Forms gratis
+ * es un link a Supabase, asi que preferimos resolucion nativa a peso pesado.
+ */
+export async function renderDesignBlob(
+  stage: Stage,
+  placement: CanvasPlacement,
+  product: ProductView,
+  options: Pick<ExportOptions, 'scale' | 'format'>,
+): Promise<{ blob: Blob; width: number; height: number }> {
   // Los handles de seleccion jamas deben llegar al archivo.
   const hidden = stage.find('Transformer')
   const previous = hidden.map((node) => node.isVisible())
@@ -68,10 +85,8 @@ export async function exportDesign(
       ? await dataUrlToBlob(url)
       : await flattenOnto(url, '#ffffff', 0.92)
 
-  const filename = `${options.fileName}-${product.slug}-${options.scale}x.${options.format}`
-  downloadBlob(blob, filename)
-
   return {
+    blob,
     width: Math.round(crop.width * pixelRatio),
     height: Math.round(crop.height * pixelRatio),
   }

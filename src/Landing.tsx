@@ -1,6 +1,7 @@
 import { lazy, Suspense } from 'react'
 import { Catalog } from './components/Catalog'
 import { Contact } from './components/Contact'
+import { DesignAttachmentProvider } from './components/DesignAttachment'
 import { EditorProductsProvider } from './components/EditorProducts'
 import { Footer } from './components/Footer'
 import { Hero } from './components/Hero'
@@ -31,25 +32,27 @@ export function Landing() {
         <Nav />
       </SectionBoundary>
       <main>
-        <EditorProductsProvider>
-          <SectionBoundary id="inicio">
-            <Hero />
-          </SectionBoundary>
-          <SectionBoundary id="editor">
-            <Suspense fallback={<EditorFallback />}>
-              <EditorSection />
-            </Suspense>
-          </SectionBoundary>
-          <SectionBoundary id="catalogo">
-            <Catalog />
-          </SectionBoundary>
-          <SectionBoundary>
-            <HowItWorks />
-          </SectionBoundary>
-          <SectionBoundary id="contacto">
-            <Contact />
-          </SectionBoundary>
-        </EditorProductsProvider>
+        <DesignAttachmentProvider>
+          <EditorProductsProvider>
+            <SectionBoundary id="inicio">
+              <Hero />
+            </SectionBoundary>
+            <SectionBoundary id="editor">
+              <Suspense fallback={<EditorFallback />}>
+                <EditorSection />
+              </Suspense>
+            </SectionBoundary>
+            <SectionBoundary id="catalogo">
+              <Catalog />
+            </SectionBoundary>
+            <SectionBoundary>
+              <HowItWorks />
+            </SectionBoundary>
+            <SectionBoundary id="contacto">
+              <Contact />
+            </SectionBoundary>
+          </EditorProductsProvider>
+        </DesignAttachmentProvider>
       </main>
       <SectionBoundary>
         <Footer />

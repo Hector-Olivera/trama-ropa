@@ -30,7 +30,7 @@ const isTypingTarget = (target: EventTarget | null): boolean =>
 
 export function EditorSection() {
   const { content } = useContent()
-  const { products, selectedId: productId, select } = useEditorProducts()
+  const { products, selectedId: productId, select, localCount } = useEditorProducts()
   const attachment = useDesignAttachment()
 
   // El autosave se lee una sola vez y siembra el estado inicial. Hacerlo en un
@@ -272,6 +272,7 @@ export function EditorSection() {
                   productId={productId}
                   onChange={select}
                   layerCount={editor.layers.length}
+                  localCount={localCount}
                 />
                 <LogoUploader onAdd={editor.addImageLayer} />
                 <button

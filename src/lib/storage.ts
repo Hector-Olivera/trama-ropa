@@ -11,7 +11,7 @@
  * URL se hace en el momento de dibujar, con un cache.
  */
 import { del, get, keys, set } from 'idb-keyval'
-import type { Design } from '../types'
+import type { Design, ProductView } from '../types'
 import { collectStoredBlobRefs, isBlobRef } from './blobReferences'
 import { BLOB_PREFIX, STORAGE_KEYS } from './storage-keys'
 
@@ -50,6 +50,32 @@ export function saveDesign(design: Design): void {
 
 export function deleteDesign(id: string): void {
   writeDesigns(readDesigns().filter((item) => item.id !== id))
+}
+
+/**
+ * Prendas que el visitante trajo desde el catálogo para editarlas.
+ *
+ * Van aparte del contenido porque el contenido es de TODOS: esto vive sólo en
+ * el navegador de quien lo pidió. Se persisten igual para que un diseño
+ * autoguardado sobre esa prenda no pierda su `productId` al recargar.
+ */
+export function listLocalProducts(): ProductView[] {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEYS.localProducts)
+    if (!raw) return []
+    const parsed: unknown = JSON.parse(raw)
+    return Array.isArray(parsed) ? (parsed as ProductView[]) : []
+  } catch {
+    return []
+  }
+}
+
+export function saveLocalProducts(products: ProductView[]): void {
+  try {
+    localStorage.setItem(STORAGE_KEYS.localProducts, JSON.stringify(products))
+  } catch (error) {
+    console.warn('No se pudieron guardar las prendas locales:', error)
+  }
 }
 
 // --- Binarios ---

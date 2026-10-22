@@ -46,7 +46,7 @@ cambia, se reescribe acá. `AGENTS.md` tiene las reglas de trabajo y los comando
 - `VITE_SUPABASE_URL` es la **Project URL** (`https://<ref>.supabase.co`), **sin** `/rest/v1`
   ni barra final: el SDK preserva el path del base y un `/rest/v1` rompe auth. Se arranca **de
   cero** en la nube (el primer guardado crea la fila).
-- Guía completa: `docs/supabase-setup.md`. Sin credenciales, la app sigue en local.
+- Sin credenciales, la app sigue en local (localStorage + IndexedDB).
 
 ## Contacto
 

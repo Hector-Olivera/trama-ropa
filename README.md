@@ -59,8 +59,7 @@ src/
 Seam de datos: **`src/content/store.ts`** y **`src/admin/useAuth.ts`** son el único
 punto a cambiar para migrar a un backend (Supabase o propio). El resto del código no
 se toca. Sin credenciales corre en modo **local-first** (localStorage + IndexedDB);
-para conectar **Supabase** seguí `docs/supabase-setup.md` y copiá `.env.example` a
-`.env.local`.
+para conectar **Supabase** copiá `.env.example` a `.env.local` y completá las variables.
 
 ## Deploy
 

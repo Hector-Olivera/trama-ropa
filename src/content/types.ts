@@ -29,6 +29,14 @@ export type Cta = {
   href: string
 }
 
+/** Prenda de la galeria. Es una FOTO, sin medidas: el editor la necesita para editarla. */
+export type CatalogItem = {
+  id: string
+  group: string
+  label: string
+  src: MediaRef
+}
+
 export type SiteContent = {
   version: number
 
@@ -65,7 +73,7 @@ export type SiteContent = {
     title: RichTitle
     groups: { id: string; label: string }[]
     /** `group` referencia `catalog.groups[].id`; "todos" queda reservado. */
-    items: { id: string; group: string; label: string; src: MediaRef }[]
+    items: CatalogItem[]
   }
 
   howItWorks: {

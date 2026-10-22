@@ -1,11 +1,15 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type Konva from 'konva'
 import { useContent } from '../../content/ContentProvider'
-import { exportDesign } from '../../lib/exportImage'
+import { exportDesign, renderDesignBlob } from '../../lib/exportImage'
+import { isSupabaseConfigured } from '../../lib/env'
+import { scrollToId } from '../../lib/scrollToId'
 import { deleteDesign, cleanupBlobs, listDesigns, saveDesign } from '../../lib/storage'
 import { useEditor } from '../../lib/useEditor'
 import { useElementSize } from '../../lib/useElementSize'
 import type { ExportFormat, ExportScale, Layer, ProductView } from '../../types'
+import { useDesignAttachment } from '../DesignAttachment'
+import { useEditorProducts } from '../EditorProducts'
 import { EditorCanvas, type CanvasMetrics } from './EditorCanvas'
 import { EditorToolbar } from './EditorToolbar'
 import { LayersPanel } from './LayersPanel'
@@ -26,7 +30,8 @@ const isTypingTarget = (target: EventTarget | null): boolean =>
 
 export function EditorSection() {
   const { content } = useContent()
-  const products = content.editor.products
+  const { products, selectedId: productId, select } = useEditorProducts()
+  const attachment = useDesignAttachment()
 
   // El autosave se lee una sola vez y siembra el estado inicial. Hacerlo en un
   // effect seria un setState en render, que la regla react-hooks v7 marca.
@@ -35,7 +40,6 @@ export function EditorSection() {
     return autosave && autosave.layers.length > 0 ? autosave : null
   })
 
-  const [productId, setProductId] = useState(boot?.productId ?? products[0]?.id ?? '')
   const product: ProductView | undefined = useMemo(
     () => products.find((item) => item.id === productId) ?? products[0],
     [products, productId],
@@ -48,6 +52,7 @@ export function EditorSection() {
   const [exporting, setExporting] = useState(false)
   const [designName, setDesignName] = useState(boot?.name ?? 'Mi diseño')
   const [saved, setSaved] = useState(() => listDesigns())
+  const [highlightSaved, setHighlightSaved] = useState(false)
 
   const signature = useMemo(
     () => signatureOf(productId, designName, editor.layers),
@@ -186,6 +191,29 @@ export function EditorSection() {
     [designName, metrics, product],
   )
 
+  const handleAttach = useCallback(() => {
+    const stage = stageRef.current
+    if (!stage || !product) return
+    void attachment.attach(async () => {
+      const { blob } = await renderDesignBlob(
+        stage,
+        {
+          displayScale: metrics.scale,
+          offsetX: metrics.offsetX,
+          offsetY: metrics.offsetY,
+        },
+        product,
+        { scale: 1, format: 'png' },
+      )
+      return blob
+    })
+  }, [attachment, metrics, product])
+
+  const handleSaveJump = () => {
+    setHighlightSaved(true)
+    scrollToId('mis-disenos')
+  }
+
   const handleSaveVersion = () => {
     saveDesign({
       id: crypto.randomUUID(),
@@ -196,12 +224,13 @@ export function EditorSection() {
       updatedAt: Date.now(),
     })
     setSaved(listDesigns())
+    setHighlightSaved(false)
   }
 
   const handleLoad = (id: string) => {
     const design = saved.find((item) => item.id === id)
     if (!design) return
-    setProductId(design.productId)
+    select(design.productId)
     setDesignName(design.name)
     editor.loadLayers(design.layers)
   }
@@ -241,7 +270,7 @@ export function EditorSection() {
                 <ProductPicker
                   products={products}
                   productId={productId}
-                  onChange={setProductId}
+                  onChange={select}
                   layerCount={editor.layers.length}
                 />
                 <LogoUploader onAdd={editor.addImageLayer} />
@@ -264,6 +293,10 @@ export function EditorSection() {
                   onClear={editor.clearLayers}
                   onExport={handleExport}
                   exporting={exporting}
+                  canAttach={isSupabaseConfigured()}
+                  onAttach={handleAttach}
+                  attachState={attachment.status}
+                  onSaveJump={handleSaveJump}
                 />
 
                 <div ref={shellRef} className="relative">
@@ -321,6 +354,7 @@ export function EditorSection() {
               versions={versions}
               name={designName}
               saveState={saveState}
+              highlight={highlightSaved}
               onNameChange={setDesignName}
               onSave={handleSaveVersion}
               onLoad={handleLoad}
@@ -337,6 +371,7 @@ type SavedProps = {
   versions: ReturnType<typeof listDesigns>
   name: string
   saveState: 'idle' | 'saving' | 'saved'
+  highlight: boolean
   onNameChange: (value: string) => void
   onSave: () => void
   onLoad: (id: string) => void
@@ -347,13 +382,21 @@ function SavedDesigns({
   versions,
   name,
   saveState,
+  highlight,
   onNameChange,
   onSave,
   onLoad,
   onDelete,
 }: SavedProps) {
   return (
-    <div className="mt-8 rounded-lg border border-brand-line bg-brand-surface p-4">
+    <div
+      id="mis-disenos"
+      className={`mt-8 scroll-mt-20 rounded-lg border p-4 transition ${
+        highlight
+          ? 'border-brand-cyan bg-brand-cyan/5 ring-2 ring-brand-cyan/70'
+          : 'border-brand-line bg-brand-surface'
+      }`}
+    >
       <div className="flex flex-wrap items-center gap-2">
         <h3 className="text-[11px] font-bold uppercase tracking-widest text-brand-muted">
           Mis diseños

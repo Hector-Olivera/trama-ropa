@@ -12,7 +12,10 @@ import {
 import type { ProductView } from '../types'
 
 /** Prefijo para que una prenda del catálogo nunca pise una prenda del contenido. */
-const localIdFor = (catalogId: string): string => `cat-${catalogId}`
+const CATALOG_PREFIX = 'cat-'
+const localIdFor = (catalogId: string): string => `${CATALOG_PREFIX}${catalogId}`
+const catalogIdFrom = (productId: string): string | null =>
+  productId.startsWith(CATALOG_PREFIX) ? productId.slice(CATALOG_PREFIX.length) : null
 
 /**
  * Cuántas fotos del catálogo puede tener el visitante al mismo tiempo. Más que
@@ -31,6 +34,12 @@ type EditorProductsContextValue = {
   select: (productId: string) => void
   /** Suma una foto del catálogo como prenda editable y la deja seleccionada. */
   addFromCatalog: (item: CatalogItem) => Promise<ProductView>
+  /**
+   * Selecciona una prenda por id. Si ya no está en la lista (el tope la
+   * descartó, o la versión guardada es vieja), la reconstruye desde el
+   * catálogo. Devuelve `false` si ya no existe en ningún lado.
+   */
+  selectById: (productId: string) => Promise<boolean>
 }
 
 const EditorProductsContext = createContext<EditorProductsContextValue | null>(null)
@@ -87,6 +96,30 @@ export function EditorProductsProvider({ children }: { children: ReactNode }) {
     [],
   )
 
+  const selectById = useCallback(
+    async (productId: string): Promise<boolean> => {
+      if (products.some((product) => product.id === productId)) {
+        setSelectedId(productId)
+        return true
+      }
+
+      const catalogId = catalogIdFrom(productId)
+      const item = catalogId
+        ? content.catalog.items.find((candidate) => candidate.id === catalogId)
+        : undefined
+      if (!item) return false
+
+      try {
+        await addFromCatalog(item)
+        return true
+      } catch (error) {
+        console.error('No se pudo restaurar la prenda del diseño:', error)
+        return false
+      }
+    },
+    [addFromCatalog, content.catalog.items, products],
+  )
+
   const value = useMemo(
     () => ({
       products,
@@ -94,8 +127,9 @@ export function EditorProductsProvider({ children }: { children: ReactNode }) {
       localCount: localProducts.length,
       select,
       addFromCatalog,
+      selectById,
     }),
-    [products, selectedId, localProducts.length, select, addFromCatalog],
+    [products, selectedId, localProducts.length, select, addFromCatalog, selectById],
   )
 
   return <EditorProductsContext.Provider value={value}>{children}</EditorProductsContext.Provider>

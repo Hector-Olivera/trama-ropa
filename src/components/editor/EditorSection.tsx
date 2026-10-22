@@ -30,7 +30,8 @@ const isTypingTarget = (target: EventTarget | null): boolean =>
 
 export function EditorSection() {
   const { content } = useContent()
-  const { products, selectedId: productId, select, localCount } = useEditorProducts()
+  const { products, selectedId: productId, select, localCount, selectById } =
+    useEditorProducts()
   const attachment = useDesignAttachment()
 
   // El autosave se lee una sola vez y siembra el estado inicial. Hacerlo en un
@@ -53,6 +54,7 @@ export function EditorSection() {
   const [designName, setDesignName] = useState(boot?.name ?? 'Mi diseño')
   const [saved, setSaved] = useState(() => listDesigns())
   const [highlightSaved, setHighlightSaved] = useState(false)
+  const [productMissing, setProductMissing] = useState(false)
 
   const signature = useMemo(
     () => signatureOf(productId, designName, editor.layers),
@@ -230,9 +232,17 @@ export function EditorSection() {
   const handleLoad = (id: string) => {
     const design = saved.find((item) => item.id === id)
     if (!design) return
-    select(design.productId)
     setDesignName(design.name)
     editor.loadLayers(design.layers)
+    setProductMissing(false)
+    void selectById(design.productId).then((found) => {
+      if (!found) setProductMissing(true)
+    })
+  }
+
+  const handleSelectProduct = (nextProductId: string) => {
+    setProductMissing(false)
+    select(nextProductId)
   }
 
   const handleDelete = (id: string) => {
@@ -270,10 +280,16 @@ export function EditorSection() {
                 <ProductPicker
                   products={products}
                   productId={productId}
-                  onChange={select}
+                  onChange={handleSelectProduct}
                   layerCount={editor.layers.length}
                   localCount={localCount}
                 />
+
+                {productMissing && (
+                  <p role="status" className="text-[11px] leading-snug text-brand-pink">
+                    La foto de este diseño ya no está en el catálogo; quedó la prenda anterior.
+                  </p>
+                )}
                 <LogoUploader onAdd={editor.addImageLayer} />
                 <button
                   type="button"

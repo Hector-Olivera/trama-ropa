@@ -34,6 +34,11 @@ cambia, se reescribe acá. `AGENTS.md` tiene las reglas de trabajo y los comando
   guardado, nunca con un draft en memoria.
 - **Centros**: claves de storage en `src/lib/storage-keys.ts`; ids estables de listas en
   `src/lib/id.ts` (`loadContent` migra contenido viejo sin ids).
+- **Catálogo → editor**: las fotos que el visitante suma con "Llevar al editor" viven sólo en
+  su navegador (`trama:local-products`, ids `cat-<catalogId>`), con tope **2** y descarte
+  FIFO; no tocan el contenido. Las versiones guardadas **nunca** se tocan: al cargar una, su
+  prenda se restaura por id desde el catálogo (`selectById`), aunque el tope la haya
+  descartado. Sólo es irrecuperable si el item desapareció del catálogo.
 
 ## Supabase
 

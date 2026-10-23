@@ -59,7 +59,7 @@ export function Contact() {
   return (
     <section
       id="contacto"
-      className="relative scroll-mt-20 overflow-hidden border-t border-brand-line py-16"
+      className="relative scroll-mt-20 overflow-hidden border-t border-brand-line py-10 md:py-16"
     >
       <div className="trama-glow-pink -right-56 -bottom-40" />
 

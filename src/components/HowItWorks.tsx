@@ -7,7 +7,7 @@ export function HowItWorks() {
   const { howItWorks } = content
 
   return (
-    <section id="como-funciona" className="scroll-mt-20 border-t border-brand-line py-16">
+    <section id="como-funciona" className="scroll-mt-20 border-t border-brand-line py-10 md:py-16">
       <div className="mx-auto max-w-7xl px-4">
         <header className="mb-10">
           <p className="mb-2 text-xs font-bold uppercase tracking-widest text-brand-cyan">
@@ -56,7 +56,7 @@ export function HowItWorks() {
           ))}
         </div>
 
-        <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="mt-4 grid grid-cols-4 gap-2 md:gap-3">
           {howItWorks.images.map((src, index) => (
             <MediaImage
               key={`${src}-${index}`}

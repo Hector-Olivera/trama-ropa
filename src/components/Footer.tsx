@@ -6,7 +6,7 @@ export function Footer() {
   const { brand, footer } = content
 
   return (
-    <footer className="border-t border-brand-line py-10">
+    <footer className="border-t border-brand-line py-8 sm:py-10">
       <div className="mx-auto flex max-w-7xl flex-col items-center gap-4 px-4 text-center sm:flex-row sm:justify-between sm:text-left">
         <div className="flex items-center gap-2">
           <MediaImage src={brand.mark} alt="" className="h-7 w-7" />

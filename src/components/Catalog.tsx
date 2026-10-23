@@ -36,7 +36,7 @@ export function Catalog() {
   }
 
   return (
-    <section id="catalogo" className="scroll-mt-20 border-t border-brand-line py-16">
+    <section id="catalogo" className="scroll-mt-20 border-t border-brand-line py-10 md:py-16">
       <div className="mx-auto max-w-7xl px-4">
         <header className="mb-8">
           <p className="mb-2 text-xs font-bold uppercase tracking-widest text-brand-cyan">

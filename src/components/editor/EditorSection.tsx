@@ -280,7 +280,7 @@ export function EditorSection() {
   const versions = saved.filter((design) => design.id !== 'autosave')
 
   return (
-    <section id="editor" className="relative scroll-mt-20 border-t border-brand-line py-16">
+    <section id="editor" className="relative scroll-mt-20 border-t border-brand-line py-10 md:py-16">
       <div className="mx-auto max-w-7xl px-4">
         <header className="mb-8">
           <p className="mb-2 text-xs font-bold uppercase tracking-widest text-brand-cyan">
@@ -316,14 +316,21 @@ export function EditorSection() {
                     La foto de este diseño ya no está en el catálogo; quedó la prenda anterior.
                   </p>
                 )}
-                <LogoUploader onAdd={editor.addImageLayer} />
-                <button
-                  type="button"
-                  onClick={editor.addTextLayer}
-                  className="w-full rounded-lg border border-brand-line px-3 py-2 text-xs font-semibold text-brand-light transition hover:border-brand-cyan hover:text-brand-cyan"
-                >
-                  + Agregar texto
-                </button>
+                <div className="space-y-2">
+                  <div className="grid grid-cols-2 gap-2">
+                    <LogoUploader onAdd={editor.addImageLayer} />
+                    <button
+                      type="button"
+                      onClick={editor.addTextLayer}
+                      className="rounded-lg border border-brand-line px-3 py-2.5 text-xs font-semibold text-brand-light transition hover:border-brand-cyan hover:text-brand-cyan"
+                    >
+                      + Agregar texto
+                    </button>
+                  </div>
+                  <p className="text-[10px] leading-snug text-brand-muted">
+                    Un PNG con fondo transparente da el mejor resultado.
+                  </p>
+                </div>
               </div>
 
               <div className="min-w-0 space-y-3">

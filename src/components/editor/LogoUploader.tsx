@@ -37,10 +37,6 @@ export function LogoUploader({ onAdd }: Props) {
 
   return (
     <div>
-      <h3 className="mb-2 text-[11px] font-bold uppercase tracking-widest text-brand-muted">
-        Tu logo
-      </h3>
-
       <button
         type="button"
         onClick={() => inputRef.current?.click()}
@@ -55,19 +51,15 @@ export function LogoUploader({ onAdd }: Props) {
           void handleFiles(event.dataTransfer.files)
         }}
         disabled={busy}
-        className={`flex w-full flex-col items-center justify-center gap-1 rounded-lg border border-dashed px-3 py-6 text-center transition ${
+        title="PNG con fondo transparente da el mejor resultado"
+        className={`flex w-full items-center justify-center gap-1.5 rounded-lg border border-dashed px-3 py-2.5 text-xs font-semibold text-brand-light transition ${
           dragging
-            ? 'border-brand-cyan bg-brand-cyan/10'
-            : 'border-brand-line hover:border-brand-muted'
+            ? 'border-brand-cyan bg-brand-cyan/10 text-brand-cyan'
+            : 'border-brand-line hover:border-brand-cyan hover:text-brand-cyan'
         } ${busy ? 'cursor-wait opacity-60' : ''}`}
       >
-        <span className="text-xl" aria-hidden="true">
-          +
-        </span>
-        <span className="text-xs font-semibold text-brand-light">
-          {busy ? 'Procesando...' : 'Subir logo'}
-        </span>
-        <span className="text-[11px] text-brand-muted">o arrastralo acá · PNG/JPG/WEBP</span>
+        <span aria-hidden="true">+</span>
+        <span>{busy ? 'Procesando...' : 'Subir logo'}</span>
       </button>
 
       <input
@@ -84,10 +76,6 @@ export function LogoUploader({ onAdd }: Props) {
           {error}
         </p>
       )}
-
-      <p className="mt-2 text-[11px] leading-snug text-brand-muted">
-        Un PNG con fondo transparente da el mejor resultado.
-      </p>
     </div>
   )
 }

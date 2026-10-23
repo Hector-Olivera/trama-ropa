@@ -49,6 +49,10 @@ cambia, se reescribe acá. `AGENTS.md` tiene las reglas de trabajo y los comando
   catálogo sin tocar el provider). Entra en la firma del autosave y en `Design.zoom`
   (opcional: los diseños viejos abren al 100%), así que cargar una versión restaura la vista.
   Las scrollbars del lienzo usan la clase `trama-scroll` (`index.css`).
+- **Móvil**: el menú de la barra es una hamburguesa (`Nav`) que lista **`nav.links`** del
+  contenido (no hardcodear atajos: se editan en el admin); cierra al navegar y con Escape.
+  Las secciones usan `py-10 md:py-16` (el desktop conserva el espaciado grande) y las 4 fotos
+  de "Cómo funciona" van en una sola fila (`grid-cols-4`) también en mobile.
 
 ## Supabase
 

@@ -1,5 +1,6 @@
 import { MediaImage } from '../../content/MediaImage'
 import type { ProductView } from '../../types'
+import { MAX_LOCAL_PRODUCTS } from '../EditorProducts'
 
 type Props = {
   products: ProductView[]
@@ -7,9 +8,11 @@ type Props = {
   onChange: (productId: string) => void
   /** Avisa si quedan capas que no calzan con la prenda nueva. */
   layerCount: number
+  /** Cuántas fotos del catálogo sumó el visitante (tope MAX_LOCAL_PRODUCTS). */
+  localCount: number
 }
 
-export function ProductPicker({ products, productId, onChange, layerCount }: Props) {
+export function ProductPicker({ products, productId, onChange, layerCount, localCount }: Props) {
   return (
     <div>
       <h3 className="mb-2 text-[11px] font-bold uppercase tracking-widest text-brand-muted">
@@ -60,6 +63,12 @@ export function ProductPicker({ products, productId, onChange, layerCount }: Pro
       {layerCount > 0 && (
         <p className="mt-2 text-[11px] leading-snug text-brand-muted">
           Al cambiar de prenda el diseño se mantiene. Recalibrá la posición si hace falta.
+        </p>
+      )}
+
+      {localCount > 0 && (
+        <p className="mt-2 text-[11px] leading-snug text-brand-muted">
+          Hasta {MAX_LOCAL_PRODUCTS} fotos del catálogo: al agregar otra se quita la primera.
         </p>
       )}
     </div>

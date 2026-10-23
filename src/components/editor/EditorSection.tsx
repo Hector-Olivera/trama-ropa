@@ -490,21 +490,21 @@ function SavedDesigns({
           para conservar una copia con nombre.
         </p>
       ) : (
-        <ul className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
+        <ul className="mt-3 grid grid-cols-2 gap-1.5 sm:gap-2 lg:grid-cols-4">
           {versions.map((design) => (
             <li
               key={design.id}
-              className="flex items-center gap-2 rounded border border-brand-line bg-brand-black/40 px-2.5 py-2"
+              className="flex items-center gap-2 rounded border border-brand-line bg-brand-black/40 px-2 py-1.5"
             >
               <button
                 type="button"
                 onClick={() => onLoad(design.id)}
                 className="min-w-0 flex-1 text-left"
               >
-                <span className="block truncate text-xs font-semibold text-brand-light">
+                <span className="block truncate text-[11px] font-semibold text-brand-light">
                   {design.name}
                 </span>
-                <span className="block text-[10px] text-brand-muted">
+                <span className="block text-[9px] text-brand-muted">
                   {new Date(design.updatedAt).toLocaleDateString('es-AR')} ·{' '}
                   {design.layers.length}{' '}
                   {design.layers.length === 1 ? 'capa' : 'capas'}

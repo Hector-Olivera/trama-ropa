@@ -35,7 +35,7 @@ export function LayersPanel({
         return (
           <li key={layer.id}>
             <div
-              className={`flex items-center gap-1 rounded border px-1.5 py-1.5 transition ${
+              className={`flex flex-col gap-1.5 rounded border px-1.5 py-1.5 transition lg:flex-row lg:items-center lg:gap-1 ${
                 active
                   ? 'border-brand-cyan bg-brand-cyan/10'
                   : 'border-brand-line hover:border-brand-muted'
@@ -44,7 +44,7 @@ export function LayersPanel({
               <button
                 type="button"
                 onClick={() => onSelect(layer.id)}
-                className="min-w-0 flex-1 text-left"
+                className="w-full min-w-0 text-left lg:flex-1"
               >
                 <span className="flex items-center gap-1.5">
                   <span className="text-[10px] text-brand-muted">
@@ -60,29 +60,31 @@ export function LayersPanel({
                 </span>
               </button>
 
-              <IconButton
-                label={layer.visible ? 'Ocultar' : 'Mostrar'}
-                onClick={() => onToggleVisible(layer.id)}
-                active={!layer.visible}
-              >
-                {layer.visible ? '◉' : '○'}
-              </IconButton>
-              <IconButton
-                label={layer.locked ? 'Desbloquear' : 'Bloquear'}
-                onClick={() => onToggleLocked(layer.id)}
-                active={layer.locked}
-              >
-                {layer.locked ? '🔒' : '🔓'}
-              </IconButton>
-              <IconButton label="Subir" onClick={() => onReorder(layer.id, 1)}>
-                ↑
-              </IconButton>
-              <IconButton label="Bajar" onClick={() => onReorder(layer.id, -1)}>
-                ↓
-              </IconButton>
-              <IconButton label="Borrar" onClick={() => onRemove(layer.id)} danger>
-                ×
-              </IconButton>
+              <div className="flex items-center justify-end gap-0.5 self-end lg:self-auto">
+                <IconButton
+                  label={layer.visible ? 'Ocultar' : 'Mostrar'}
+                  onClick={() => onToggleVisible(layer.id)}
+                  active={!layer.visible}
+                >
+                  {layer.visible ? '◉' : '○'}
+                </IconButton>
+                <IconButton
+                  label={layer.locked ? 'Desbloquear' : 'Bloquear'}
+                  onClick={() => onToggleLocked(layer.id)}
+                  active={layer.locked}
+                >
+                  {layer.locked ? '🔒' : '🔓'}
+                </IconButton>
+                <IconButton label="Subir" onClick={() => onReorder(layer.id, 1)}>
+                  ↑
+                </IconButton>
+                <IconButton label="Bajar" onClick={() => onReorder(layer.id, -1)}>
+                  ↓
+                </IconButton>
+                <IconButton label="Borrar" onClick={() => onRemove(layer.id)} danger>
+                  ×
+                </IconButton>
+              </div>
             </div>
           </li>
         )

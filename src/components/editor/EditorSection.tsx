@@ -400,11 +400,6 @@ export function EditorSection() {
                       const layer = editor.layers.find((item) => item.id === id)
                       if (layer) handleCommit(id, { visible: !layer.visible } as Partial<Layer>)
                     }}
-                    onToggleLocked={(id) => {
-                      const layer = editor.layers.find((item) => item.id === id)
-                      if (layer) handleCommit(id, { locked: !layer.locked } as Partial<Layer>)
-                    }}
-                    onReorder={editor.reorderLayer}
                     onRemove={editor.removeLayer}
                   />
                 </div>
@@ -490,7 +485,7 @@ function SavedDesigns({
           para conservar una copia con nombre.
         </p>
       ) : (
-        <ul className="mt-3 grid grid-cols-2 gap-1.5 sm:gap-2 lg:grid-cols-4">
+        <ul className="mt-3 grid grid-cols-3 gap-1.5">
           {versions.map((design) => (
             <li
               key={design.id}

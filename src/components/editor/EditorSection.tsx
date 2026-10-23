@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type Konva from 'konva'
 import { useContent } from '../../content/ContentProvider'
-import { clampZoom, computeCanvasMetrics } from '../../lib/canvasMetrics'
+import { ZOOM_MIN, clampZoom, computeCanvasMetrics } from '../../lib/canvasMetrics'
 import { exportDesign, renderDesignBlob } from '../../lib/exportImage'
 import { isSupabaseConfigured } from '../../lib/env'
 import { scrollToId } from '../../lib/scrollToId'
@@ -58,7 +58,14 @@ export function EditorSection() {
   const [editingId, setEditingId] = useState<string | null>(null)
   const [exporting, setExporting] = useState(false)
   const [designName, setDesignName] = useState(boot?.name ?? 'Mi diseño')
-  const [zoom, setZoom] = useState(() => clampZoom(boot?.zoom ?? 1))
+  // El zoom pertenece a la prenda que se está viendo: si cambia la prenda,
+  // vuelve al tamaño original sin que haya que resetearlo a mano en cada camino
+  // (selector, "Llevar al editor" del catálogo o restaurar una versión).
+  const [zoomFor, setZoomFor] = useState(() => ({
+    productId,
+    value: clampZoom(boot?.zoom ?? 1),
+  }))
+  const zoom = zoomFor.productId === productId ? zoomFor.value : ZOOM_MIN
   const [saved, setSaved] = useState(() => listDesigns())
   const [highlightSaved, setHighlightSaved] = useState(false)
   const [productMissing, setProductMissing] = useState(false)
@@ -87,6 +94,11 @@ export function EditorSection() {
   const handleCommit = useCallback(
     (layerId: string, patch: Partial<Layer>) => editor.updateLayer(layerId, patch),
     [editor],
+  )
+
+  const handleZoom = useCallback(
+    (value: number) => setZoomFor({ productId, value: clampZoom(value) }),
+    [productId],
   )
 
   // El lienzo crece con el zoom: al cambiarlo centramos la vista en la prenda.
@@ -246,7 +258,7 @@ export function EditorSection() {
     if (!design) return
     setDesignName(design.name)
     editor.loadLayers(design.layers)
-    setZoom(clampZoom(design.zoom ?? 1))
+    setZoomFor({ productId: design.productId, value: clampZoom(design.zoom ?? 1) })
     setProductMissing(false)
     void selectById(design.productId).then((found) => {
       if (!found) setProductMissing(true)
@@ -255,6 +267,7 @@ export function EditorSection() {
 
   const handleSelectProduct = (nextProductId: string) => {
     setProductMissing(false)
+    setZoomFor({ productId: nextProductId, value: ZOOM_MIN })
     select(nextProductId)
   }
 
@@ -333,7 +346,7 @@ export function EditorSection() {
                   <div
                     ref={shellRef}
                     style={{ height: CANVAS_HEIGHT }}
-                    className={`overflow-auto ${zoom > 1 ? 'cursor-grab active:cursor-grabbing' : ''}`}
+                    className={`trama-scroll overflow-auto ${zoom > 1 ? 'cursor-grab active:cursor-grabbing' : ''}`}
                   >
                     <EditorCanvas
                       product={product}
@@ -350,7 +363,7 @@ export function EditorSection() {
                     />
                   </div>
 
-                  <ZoomControl zoom={zoom} onChange={setZoom} />
+                  <ZoomControl zoom={zoom} onChange={handleZoom} />
                 </div>
 
                 <p className="text-[11px] text-brand-muted">

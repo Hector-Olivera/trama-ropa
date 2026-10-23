@@ -44,8 +44,11 @@ cambia, se reescribe acá. `AGENTS.md` tiene las reglas de trabajo y los comando
   original. Se implementa **agrandando el `Stage`** (`lib/canvasMetrics.ts`) dentro de un
   contenedor con scroll nativo, no con `transform` CSS (rompería el hit-testing de Konva y el
   recorte del export). Paneo = arrastrar la prenda/fondo (`EditorCanvas`); arrastrar una capa
-  mueve la capa. El zoom entra en la firma del autosave y en `Design.zoom` (opcional: los
-  diseños viejos abren al 100%), así que cargar una versión restaura la vista.
+  mueve la capa. El zoom **pertenece a la prenda actual**: si cambia la prenda vuelve a 100%
+  (estado `zoomFor` con el `productId` en `EditorSection`, así también cubre el alta desde el
+  catálogo sin tocar el provider). Entra en la firma del autosave y en `Design.zoom`
+  (opcional: los diseños viejos abren al 100%), así que cargar una versión restaura la vista.
+  Las scrollbars del lienzo usan la clase `trama-scroll` (`index.css`).
 
 ## Supabase
 

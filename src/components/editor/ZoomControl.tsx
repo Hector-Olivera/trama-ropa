@@ -15,7 +15,7 @@ export function ZoomControl({ zoom, onChange }: Props) {
     <div
       role="group"
       aria-label="Zoom de la prenda"
-      className="absolute bottom-3 right-3 flex items-center gap-0.5 rounded-full border border-brand-line bg-brand-black/85 p-1 shadow-lg backdrop-blur"
+      className="absolute bottom-4 right-4 flex items-center gap-0.5 rounded-full border border-brand-line bg-brand-black/85 p-1 shadow-lg backdrop-blur"
     >
       <button
         type="button"

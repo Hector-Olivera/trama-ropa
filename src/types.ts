@@ -84,6 +84,7 @@ export type Design = {
   name: string
   productId: string
   layers: Layer[]
+  zoom?: number
   createdAt: number
   updatedAt: number
 }

@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type Konva from 'konva'
 import { useContent } from '../../content/ContentProvider'
+import { clampZoom, computeCanvasMetrics } from '../../lib/canvasMetrics'
 import { exportDesign, renderDesignBlob } from '../../lib/exportImage'
 import { isSupabaseConfigured } from '../../lib/env'
 import { scrollToId } from '../../lib/scrollToId'
@@ -10,19 +11,24 @@ import { useElementSize } from '../../lib/useElementSize'
 import type { ExportFormat, ExportScale, Layer, ProductView } from '../../types'
 import { useDesignAttachment } from '../DesignAttachment'
 import { useEditorProducts } from '../EditorProducts'
-import { EditorCanvas, type CanvasMetrics } from './EditorCanvas'
+import { EditorCanvas } from './EditorCanvas'
 import { EditorToolbar } from './EditorToolbar'
 import { LayersPanel } from './LayersPanel'
 import { LogoUploader } from './LogoUploader'
 import { ProductPicker } from './ProductPicker'
 import { PropertiesPanel } from './PropertiesPanel'
+import { ZoomControl } from './ZoomControl'
 import { RichTitle } from '../RichTitle'
 
 const CANVAS_HEIGHT = 640
 
 /** Firma del contenido guardable. El estado de guardado se deriva de compararla. */
-const signatureOf = (productId: string, name: string, layers: Layer[]): string =>
-  JSON.stringify({ productId, name, layers })
+const signatureOf = (
+  productId: string,
+  name: string,
+  layers: Layer[],
+  zoom: number,
+): string => JSON.stringify({ productId, name, layers, zoom })
 
 const isTypingTarget = (target: EventTarget | null): boolean =>
   target instanceof HTMLElement &&
@@ -52,40 +58,44 @@ export function EditorSection() {
   const [editingId, setEditingId] = useState<string | null>(null)
   const [exporting, setExporting] = useState(false)
   const [designName, setDesignName] = useState(boot?.name ?? 'Mi diseño')
+  const [zoom, setZoom] = useState(() => clampZoom(boot?.zoom ?? 1))
   const [saved, setSaved] = useState(() => listDesigns())
   const [highlightSaved, setHighlightSaved] = useState(false)
   const [productMissing, setProductMissing] = useState(false)
 
   const signature = useMemo(
-    () => signatureOf(productId, designName, editor.layers),
-    [productId, designName, editor.layers],
+    () => signatureOf(productId, designName, editor.layers, zoom),
+    [productId, designName, editor.layers, zoom],
   )
   const [savedSignature, setSavedSignature] = useState(() =>
-    boot ? signatureOf(boot.productId, boot.name, boot.layers) : '',
+    boot ? signatureOf(boot.productId, boot.name, boot.layers, clampZoom(boot.zoom ?? 1)) : '',
   )
   // Derivado, no guardado: asi no hace falta setState dentro del effect de autosave.
   const saveState: 'idle' | 'saving' | 'saved' =
     editor.layers.length === 0 ? 'idle' : signature === savedSignature ? 'saved' : 'saving'
 
-  const metrics: CanvasMetrics = useMemo(() => {
-    const width = Math.max(shellSize.width, 1)
-    const height = CANVAS_HEIGHT
-    const productWidth = product?.width ?? 1
-    const productHeight = product?.height ?? 1
-    const scale = Math.min(width / productWidth, height / productHeight)
-    return {
-      stageWidth: width,
-      stageHeight: height,
-      scale,
-      offsetX: (width - productWidth * scale) / 2,
-      offsetY: (height - productHeight * scale) / 2,
-    }
-  }, [shellSize.width, product?.width, product?.height])
+  const metrics = useMemo(
+    () =>
+      computeCanvasMetrics(
+        { width: product?.width ?? 1, height: product?.height ?? 1 },
+        { width: shellSize.width, height: CANVAS_HEIGHT },
+        zoom,
+      ),
+    [shellSize.width, product?.width, product?.height, zoom],
+  )
 
   const handleCommit = useCallback(
     (layerId: string, patch: Partial<Layer>) => editor.updateLayer(layerId, patch),
     [editor],
   )
+
+  // El lienzo crece con el zoom: al cambiarlo centramos la vista en la prenda.
+  useEffect(() => {
+    const viewport = shellRef.current
+    if (!viewport) return
+    viewport.scrollLeft = Math.max(0, (viewport.scrollWidth - viewport.clientWidth) / 2)
+    viewport.scrollTop = Math.max(0, (viewport.scrollHeight - viewport.clientHeight) / 2)
+  }, [zoom, shellRef])
 
   // --- Autosave: una vez que el usuario deja de tocar, guardamos. ---
   useEffect(() => {
@@ -97,6 +107,7 @@ export function EditorSection() {
         name: designName,
         productId,
         layers: editor.layers,
+        zoom,
         createdAt: now,
         updatedAt: now,
       })
@@ -105,7 +116,7 @@ export function EditorSection() {
     }, 900)
 
     return () => clearTimeout(timer)
-  }, [signature, designName, productId, editor.layers])
+  }, [signature, designName, productId, editor.layers, zoom])
 
   // --- Atajos de teclado ---
   useEffect(() => {
@@ -222,6 +233,7 @@ export function EditorSection() {
       name: designName.trim() || 'Sin nombre',
       productId,
       layers: editor.layers,
+      zoom,
       createdAt: Date.now(),
       updatedAt: Date.now(),
     })
@@ -234,6 +246,7 @@ export function EditorSection() {
     if (!design) return
     setDesignName(design.name)
     editor.loadLayers(design.layers)
+    setZoom(clampZoom(design.zoom ?? 1))
     setProductMissing(false)
     void selectById(design.productId).then((found) => {
       if (!found) setProductMissing(true)
@@ -316,23 +329,34 @@ export function EditorSection() {
                   onSaveJump={handleSaveJump}
                 />
 
-                <div ref={shellRef} className="relative">
-                  <EditorCanvas
-                    product={product}
-                    layers={editor.layers}
-                    selectedId={editor.selectedId}
-                    metrics={metrics}
-                    stageRef={stageRef}
-                    editingId={editingId}
-                    onEditingChange={setEditingId}
-                    onSelect={editor.setSelectedId}
-                    onCommit={handleCommit}
-                  />
+                <div className="relative">
+                  <div
+                    ref={shellRef}
+                    style={{ height: CANVAS_HEIGHT }}
+                    className={`overflow-auto ${zoom > 1 ? 'cursor-grab active:cursor-grabbing' : ''}`}
+                  >
+                    <EditorCanvas
+                      product={product}
+                      layers={editor.layers}
+                      selectedId={editor.selectedId}
+                      metrics={metrics}
+                      stageRef={stageRef}
+                      viewportRef={shellRef}
+                      canPan={zoom > 1}
+                      editingId={editingId}
+                      onEditingChange={setEditingId}
+                      onSelect={editor.setSelectedId}
+                      onCommit={handleCommit}
+                    />
+                  </div>
+
+                  <ZoomControl zoom={zoom} onChange={setZoom} />
                 </div>
 
                 <p className="text-[11px] text-brand-muted">
                   Doble click en un texto para editarlo · Supr para borrar · Ctrl+Z deshacer ·
                   flechas para mover · Shift+flechas para pasos de 10 px
+                  {zoom > 1 && ' · Arrastrá la prenda para mover la vista'}
                 </p>
               </div>
 

@@ -39,6 +39,13 @@ cambia, se reescribe acá. `AGENTS.md` tiene las reglas de trabajo y los comando
   FIFO; no tocan el contenido. Las versiones guardadas **nunca** se tocan: al cargar una, su
   prenda se restaura por id desde el catálogo (`selectById`), aunque el tope la haya
   descartado. Sólo es irrecuperable si el item desapareció del catálogo.
+- **Zoom del editor**: es **sólo vista** (el PNG y el adjunto siguen saliendo a resolución
+  nativa, con la prenda completa). Rango 100–300% en pasos de 25%; el mínimo es el tamaño
+  original. Se implementa **agrandando el `Stage`** (`lib/canvasMetrics.ts`) dentro de un
+  contenedor con scroll nativo, no con `transform` CSS (rompería el hit-testing de Konva y el
+  recorte del export). Paneo = arrastrar la prenda/fondo (`EditorCanvas`); arrastrar una capa
+  mueve la capa. El zoom entra en la firma del autosave y en `Design.zoom` (opcional: los
+  diseños viejos abren al 100%), así que cargar una versión restaura la vista.
 
 ## Supabase
 

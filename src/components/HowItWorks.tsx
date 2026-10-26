@@ -18,16 +18,16 @@ export function HowItWorks() {
           </h2>
         </header>
 
-        <ol className="grid grid-cols-3 gap-1.5 md:gap-4">
+        <ol className="grid grid-cols-1 gap-3 md:grid-cols-3 md:gap-4">
           {howItWorks.steps.map((step, index) => (
             <li
               key={`${step.title}-${index}`}
-              className="relative rounded-lg border border-brand-line bg-brand-surface p-5"
+              className="relative rounded-lg border border-brand-line bg-brand-surface p-4 md:p-5"
             >
               <span className="font-display text-4xl text-brand-cyan/30">
                 {String(index + 1).padStart(2, '0')}
               </span>
-              <h3 className="mt-2 text-[10px] font-bold uppercase tracking-wide md:text-sm">{step.title}</h3>
+              <h3 className="mt-2 text-sm font-bold uppercase tracking-wide">{step.title}</h3>
               <p className="mt-1.5 text-sm leading-relaxed text-brand-muted">{step.body}</p>
             </li>
           ))}

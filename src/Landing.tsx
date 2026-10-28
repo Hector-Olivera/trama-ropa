@@ -16,7 +16,7 @@ const EditorSection = lazy(() =>
 
 function EditorFallback() {
   return (
-    <section id="editor" className="scroll-mt-20 border-t border-brand-line px-4 py-24 text-center">
+    <section id="editor" className="scroll-mt-20 border-t border-brand-line px-4 py-16 text-center md:py-24">
       <p className="text-sm font-bold uppercase tracking-widest text-brand-cyan">
         Preparando el editor
       </p>

@@ -6,7 +6,7 @@ export function Hero() {
   const { hero } = content
 
   return (
-    <section id="inicio" className="relative overflow-hidden py-20 sm:py-28">
+    <section id="inicio" className="relative overflow-hidden py-12 sm:py-28">
       <div className="trama-glow-cyan -top-64 -left-56" />
       <div className="trama-glow-pink -right-56 -bottom-64" />
 

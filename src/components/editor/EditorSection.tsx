@@ -2,13 +2,13 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type Konva from 'konva'
 import { useContent } from '../../content/ContentProvider'
 import { ZOOM_MIN, clampZoom, computeCanvasMetrics } from '../../lib/canvasMetrics'
-import { exportDesign, renderDesignBlob } from '../../lib/exportImage'
+import { renderDesignBlob } from '../../lib/exportImage'
 import { isSupabaseConfigured } from '../../lib/env'
 import { scrollToId } from '../../lib/scrollToId'
 import { deleteDesign, cleanupBlobs, listDesigns, saveDesign } from '../../lib/storage'
 import { useEditor } from '../../lib/useEditor'
 import { useElementSize } from '../../lib/useElementSize'
-import type { ExportFormat, ExportScale, Layer, ProductView } from '../../types'
+import type { Layer, ProductView } from '../../types'
 import { useDesignAttachment } from '../DesignAttachment'
 import { useEditorProducts } from '../EditorProducts'
 import { EditorCanvas } from './EditorCanvas'
@@ -56,7 +56,7 @@ export function EditorSection() {
   const stageRef = useRef<Konva.Stage>(null)
   const [shellRef, shellSize] = useElementSize<HTMLDivElement>()
   const [editingId, setEditingId] = useState<string | null>(null)
-  const [exporting, setExporting] = useState(false)
+  const [exporting] = useState(false)
   const [designName, setDesignName] = useState(boot?.name ?? 'Mi diseño')
   // El zoom pertenece a la prenda que se está viendo: si cambia la prenda,
   // vuelve al tamaño original sin que haya que resetearlo a mano en cada camino
@@ -186,36 +186,6 @@ export function EditorSection() {
     return () => window.removeEventListener('keydown', onKeyDown)
   }, [editor])
 
-  const handleExport = useCallback(
-    async ({ scale, format }: { scale: ExportScale; format: ExportFormat }) => {
-      const stage = stageRef.current
-      if (!stage || !product) return
-      setExporting(true)
-      try {
-        await exportDesign(
-          stage,
-          {
-            displayScale: metrics.scale,
-            offsetX: metrics.offsetX,
-            offsetY: metrics.offsetY,
-          },
-          product,
-          {
-            scale,
-            format,
-            fileName: designName.replace(/[^\w-]+/g, '-').toLowerCase() || 'trama',
-          },
-        )
-      } catch (error) {
-        console.error(error)
-        alert('No se pudo exportar. Probá de nuevo o usá otro formato.')
-      } finally {
-        setExporting(false)
-      }
-    },
-    [designName, metrics, product],
-  )
-
   const handleAttach = useCallback(() => {
     const stage = stageRef.current
     if (!stage || !product) return
@@ -228,7 +198,7 @@ export function EditorSection() {
           offsetY: metrics.offsetY,
         },
         product,
-        { scale: 1, format: 'png' },
+        { scale: 3, format: 'png' },
       )
       return blob
     })
@@ -341,11 +311,11 @@ export function EditorSection() {
                   onUndo={editor.undo}
                   onRedo={editor.redo}
                   onClear={editor.clearLayers}
-                  onExport={handleExport}
                   exporting={exporting}
                   canAttach={isSupabaseConfigured()}
                   onAttach={handleAttach}
                   attachState={attachment.status}
+                  attachmentCount={attachment.count}
                   onSaveJump={handleSaveJump}
                 />
 

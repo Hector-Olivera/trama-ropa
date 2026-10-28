@@ -7,56 +7,84 @@ export type Attachment = { url: string; previewUrl: string }
 export type AttachmentStatus = 'idle' | 'rendering' | 'uploading' | 'ready' | 'error'
 
 export type DesignAttachmentValue = {
+  attachments: Attachment[]
   status: AttachmentStatus
-  attachment: Attachment | null
   error: string | null
-  /** Renderiza el diseño (la provee el editor) y lo deja subido con su enlace. */
   attach: (render: () => Promise<Blob>) => Promise<void>
   clear: () => void
+  remove: (index: number) => void
+  count: number
 }
 
-/** Exportado para que los tests puedan inyectar un estado listo sin subir a Supabase. */
 export const DesignAttachmentContext = createContext<DesignAttachmentValue | null>(null)
 
 export function DesignAttachmentProvider({ children }: { children: ReactNode }) {
+  const [attachments, setAttachments] = useState<Attachment[]>([])
   const [status, setStatus] = useState<AttachmentStatus>('idle')
-  const [attachment, setAttachment] = useState<Attachment | null>(null)
   const [error, setError] = useState<string | null>(null)
-  const previewUrlRef = useRef<string | null>(null)
+  const previewUrlRef = useRef<string[]>([])
+
+  const remove = useCallback((index: number) => {
+    setAttachments((current) => {
+      const next = [...current]
+      const [removed] = next.splice(index, 1)
+      if (removed) {
+        URL.revokeObjectURL(removed.previewUrl)
+        const refIndex = previewUrlRef.current.indexOf(removed.previewUrl)
+        if (refIndex >= 0) previewUrlRef.current.splice(refIndex, 1)
+      }
+      if (next.length === 0) {
+        setStatus('idle')
+      }
+      return next
+    })
+    setError(null)
+  }, [])
 
   const clear = useCallback(() => {
-    if (previewUrlRef.current) URL.revokeObjectURL(previewUrlRef.current)
-    previewUrlRef.current = null
-    setAttachment(null)
+    for (const url of previewUrlRef.current) {
+      URL.revokeObjectURL(url)
+    }
+    previewUrlRef.current = []
+    setAttachments([])
     setError(null)
     setStatus('idle')
   }, [])
 
   const attach = useCallback(async (render: () => Promise<Blob>) => {
-    setStatus('rendering')
+    setStatus((current) => (current === 'idle' ? 'rendering' : current))
     setError(null)
     try {
       const blob = await render()
       setStatus('uploading')
       const url = await uploadDesign(blob)
 
-      if (previewUrlRef.current) URL.revokeObjectURL(previewUrlRef.current)
       const previewUrl = URL.createObjectURL(blob)
-      previewUrlRef.current = previewUrl
+      previewUrlRef.current.push(previewUrl)
 
-      setAttachment({ url, previewUrl })
+      setAttachments((current) => {
+        if (current.length >= 2) return current
+        return [...current, { url, previewUrl }]
+      })
       setStatus('ready')
     } catch (cause) {
       console.error('No se pudo adjuntar el diseño:', cause)
-      setAttachment(null)
       setError('No se pudo preparar el diseño para el mail. Probá de nuevo.')
       setStatus('error')
     }
   }, [])
 
   const value = useMemo(
-    () => ({ status, attachment, error, attach, clear }),
-    [status, attachment, error, attach, clear],
+    () => ({
+      attachments,
+      status,
+      error,
+      attach,
+      clear,
+      remove,
+      count: attachments.length,
+    }),
+    [attachments, status, error, attach, clear, remove],
   )
 
   return <DesignAttachmentContext.Provider value={value}>{children}</DesignAttachmentContext.Provider>

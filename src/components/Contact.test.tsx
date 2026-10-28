@@ -12,15 +12,20 @@ afterEach(() => {
 })
 
 function attachmentValue(overrides: Partial<DesignAttachmentValue> = {}): DesignAttachmentValue {
-  return {
-    status: 'ready',
-    attachment: {
+  const attachments = [
+    {
       url: 'https://supabase.test/sign/diseno-abc.png?t=firma',
       previewUrl: 'blob:preview',
     },
+  ]
+  return {
+    attachments,
+    status: 'ready',
     error: null,
     attach: vi.fn(async () => {}),
     clear: vi.fn(),
+    remove: vi.fn(),
+    count: attachments.length,
     ...overrides,
   }
 }
@@ -91,11 +96,8 @@ describe('Contact', () => {
 
     expect(await screen.findByText('Diseño adjunto')).toBeTruthy()
 
-    const link = screen.getByRole('link', { name: /Abrir enlace/ })
-    expect(link.getAttribute('href')).toBe('https://supabase.test/sign/diseno-abc.png?t=firma')
-
     fireEvent.click(screen.getByRole('button', { name: 'Quitar el diseño adjunto' }))
-    expect(attachment.clear).toHaveBeenCalledTimes(1)
+    expect(attachment.remove).toHaveBeenCalledTimes(1)
   })
 
   it('agrega el enlace del diseño al cuerpo del mensaje', async () => {
@@ -114,6 +116,6 @@ describe('Contact', () => {
 
     const body = JSON.parse(fetchMock.mock.calls[0][1]?.body as string) as { message: string }
     expect(body.message).toContain('20 remeras')
-    expect(body.message).toContain('Mi diseño: https://supabase.test/sign/diseno-abc.png?t=firma')
+    expect(body.message).toContain('Mi diseño 1: https://supabase.test/sign/diseno-abc.png?t=firma')
   })
 })

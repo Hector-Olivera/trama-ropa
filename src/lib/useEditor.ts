@@ -142,9 +142,9 @@ export function useEditor(
   )
 
   const clearLayers = useCallback(() => {
-    reset([])
+    commit((current) => current.map((layer) => ({ ...layer, visible: false } as Layer)))
     setSelectedId(null)
-  }, [reset])
+  }, [commit])
 
   /** Reemplaza todo el contenido, sin dejar historial: es una carga, no una edicion. */
   const loadLayers = useCallback(

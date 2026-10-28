@@ -22,13 +22,15 @@ export function HowItWorks() {
           {howItWorks.steps.map((step, index) => (
             <li
               key={`${step.title}-${index}`}
-              className="relative rounded-lg border border-brand-line bg-brand-surface p-4 md:p-5"
+              className="relative rounded-lg border border-brand-line bg-brand-surface px-4 py-2.5 md:p-5"
             >
-              <span className="font-display text-4xl text-brand-cyan/30">
+              <span className="font-display text-3xl text-brand-cyan/30 md:text-4xl">
                 {String(index + 1).padStart(2, '0')}
               </span>
-              <h3 className="mt-2 text-sm font-bold uppercase tracking-wide">{step.title}</h3>
-              <p className="mt-1.5 text-sm leading-relaxed text-brand-muted">{step.body}</p>
+              <h3 className="mt-1 text-sm font-bold uppercase tracking-wide md:mt-2">{step.title}</h3>
+              <p className="mt-0.5 text-sm leading-relaxed text-brand-muted md:mt-1.5">
+                {step.body}
+              </p>
             </li>
           ))}
         </ol>

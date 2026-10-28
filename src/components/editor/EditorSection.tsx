@@ -400,11 +400,6 @@ export function EditorSection() {
                       const layer = editor.layers.find((item) => item.id === id)
                       if (layer) handleCommit(id, { visible: !layer.visible } as Partial<Layer>)
                     }}
-                    onToggleLocked={(id) => {
-                      const layer = editor.layers.find((item) => item.id === id)
-                      if (layer) handleCommit(id, { locked: !layer.locked } as Partial<Layer>)
-                    }}
-                    onReorder={editor.reorderLayer}
                     onRemove={editor.removeLayer}
                   />
                 </div>
@@ -490,21 +485,21 @@ function SavedDesigns({
           para conservar una copia con nombre.
         </p>
       ) : (
-        <ul className="mt-3 grid grid-cols-2 gap-1.5">
+        <ul className="mt-3 grid grid-cols-2 gap-1.5 lg:grid-cols-4 lg:gap-2">
           {versions.map((design) => (
             <li
               key={design.id}
-              className="flex items-center gap-1.5 rounded border border-brand-line bg-brand-black/40 px-2 py-1.5"
+              className="flex items-center gap-1.5 rounded border border-brand-line bg-brand-black/40 px-2 py-1.5 lg:gap-2 lg:px-2.5 lg:py-2"
             >
               <button
                 type="button"
                 onClick={() => onLoad(design.id)}
                 className="min-w-0 flex-1 text-left"
               >
-                <span className="block truncate text-[11px] font-semibold text-brand-light">
+                <span className="block truncate text-[11px] font-semibold text-brand-light lg:text-xs">
                   {design.name}
                 </span>
-                <span className="block text-[9px] text-brand-muted">
+                <span className="block text-[9px] text-brand-muted lg:text-[10px]">
                   {new Date(design.updatedAt).toLocaleDateString('es-AR')} ·{' '}
                   {design.layers.length}{' '}
                   {design.layers.length === 1 ? 'capa' : 'capas'}

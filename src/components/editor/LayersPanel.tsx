@@ -5,8 +5,6 @@ type Props = {
   selectedId: string | null
   onSelect: (id: string) => void
   onToggleVisible: (id: string) => void
-  onToggleLocked: (id: string) => void
-  onReorder: (id: string, amount: 1 | -1) => void
   onRemove: (id: string) => void
 }
 
@@ -15,8 +13,6 @@ export function LayersPanel({
   selectedId,
   onSelect,
   onToggleVisible,
-  onToggleLocked,
-  onReorder,
   onRemove,
 }: Props) {
   if (layers.length === 0) {
@@ -28,12 +24,12 @@ export function LayersPanel({
   }
 
   return (
-    <ul className="space-y-1">
+    <ul className="grid grid-cols-2 gap-1.5 lg:grid-cols-1 lg:space-y-1 lg:gap-0">
       {/* Se renderiza de arriba hacia abajo en z-order: la ultima capa va primera. */}
       {[...layers].reverse().map((layer) => {
         const active = layer.id === selectedId
         return (
-          <li key={layer.id}>
+          <li key={layer.id} className="lg:w-full">
             <div
               className={`flex items-center gap-1 rounded border px-1.5 py-1.5 transition ${
                 active
@@ -66,19 +62,6 @@ export function LayersPanel({
                 active={!layer.visible}
               >
                 {layer.visible ? '◉' : '○'}
-              </IconButton>
-              <IconButton
-                label={layer.locked ? 'Desbloquear' : 'Bloquear'}
-                onClick={() => onToggleLocked(layer.id)}
-                active={layer.locked}
-              >
-                {layer.locked ? '🔒' : '🔓'}
-              </IconButton>
-              <IconButton label="Subir" onClick={() => onReorder(layer.id, 1)}>
-                ↑
-              </IconButton>
-              <IconButton label="Bajar" onClick={() => onReorder(layer.id, -1)}>
-                ↓
               </IconButton>
               <IconButton label="Borrar" onClick={() => onRemove(layer.id)} danger>
                 ×

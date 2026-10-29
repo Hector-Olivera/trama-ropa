@@ -150,3 +150,12 @@ input[type='color'].trama-color::-webkit-color-swatch {
     scrollbar-color: var(--color-brand-line) var(--color-brand-black);
   }
 }
+
+@keyframes glow-pulse {
+  0% { box-shadow: 0 0 0 0 rgba(0, 217, 255, 0.7); }
+  70% { box-shadow: 0 0 0 6px rgba(0, 217, 255, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(0, 217, 255, 0); }
+}
+.animate-glow-pulse {
+  animation: glow-pulse 1s ease-out 3;
+}

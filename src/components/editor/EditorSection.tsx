@@ -186,43 +186,24 @@ export function EditorSection() {
     return () => window.removeEventListener('keydown', onKeyDown)
   }, [editor])
 
-  const isCurrentSaved = useMemo(() => {
-    if (saved.length === 0) return false
-    const current = {
-      productId,
-      layers: editor.layers,
-      zoom,
-    }
-    return saved.some((item) => {
-      if (item.id === 'autosave') return false
-      if (item.productId !== current.productId) return false
-      if ((item.zoom ?? 1) !== current.zoom) return false
-      if (item.layers.length !== current.layers.length) return false
-      return item.layers.every((layer, index) => {
-        const other = current.layers[index]
-        if (!other) return false
-        return (
-          layer.id === other.id &&
-          layer.visible === other.visible &&
-          layer.x === other.x &&
-          layer.y === other.y &&
-          layer.width === other.width &&
-          layer.height === other.height &&
-          layer.rotation === other.rotation &&
-          layer.opacity === other.opacity
-        )
-      })
-    })
-  }, [editor.layers, productId, saved, zoom])
+  const designSnapshot = useMemo(
+    () => JSON.stringify({ productId, zoom, layers: editor.layers }),
+    [editor.layers, productId, zoom],
+  )
 
-  const designSignature = useMemo(() => {
-    return `${productId}|${zoom}|${editor.layers
-      .map(
-        (layer) =>
-          `${layer.id}:${layer.type}:${layer.visible}:${layer.x},${layer.y},${layer.width},${layer.height},${layer.rotation},${layer.opacity}`,
-      )
-      .join('|')}`
-  }, [editor.layers, productId, zoom])
+  const isCurrentSaved = useMemo(
+    () =>
+      saved.some(
+        (item) =>
+          item.id !== 'autosave' &&
+          JSON.stringify({
+            productId: item.productId,
+            zoom: item.zoom ?? 1,
+            layers: item.layers,
+          }) === designSnapshot,
+      ),
+    [designSnapshot, saved],
+  )
 
   const handleAttach = useCallback(() => {
     const stage = stageRef.current
@@ -241,9 +222,9 @@ export function EditorSection() {
         )
         return blob
       },
-      designSignature,
+      designSnapshot,
     )
-  }, [attachment, designSignature, metrics, product])
+  }, [attachment, designSnapshot, metrics, product])
 
   const handleSaveJump = useCallback(() => {
     setHighlightSaved(true)

@@ -2,7 +2,7 @@ import { createContext, useCallback, useContext, useMemo, useRef, useState } fro
 import type { ReactNode } from 'react'
 import { uploadDesign } from '../lib/designUpload'
 
-export type Attachment = { url: string; previewUrl: string }
+export type Attachment = { url: string; previewUrl: string; signature?: string }
 
 export type AttachmentStatus = 'idle' | 'rendering' | 'uploading' | 'ready' | 'error'
 
@@ -10,7 +10,7 @@ export type DesignAttachmentValue = {
   attachments: Attachment[]
   status: AttachmentStatus
   error: string | null
-  attach: (render: () => Promise<Blob>) => Promise<void>
+  attach: (render: () => Promise<Blob>, signature?: string) => Promise<void>
   clear: () => void
   remove: (index: number) => void
   count: number
@@ -51,28 +51,45 @@ export function DesignAttachmentProvider({ children }: { children: ReactNode }) 
     setStatus('idle')
   }, [])
 
-  const attach = useCallback(async (render: () => Promise<Blob>) => {
-    setStatus((current) => (current === 'idle' ? 'rendering' : current))
-    setError(null)
-    try {
-      const blob = await render()
-      setStatus('uploading')
-      const url = await uploadDesign(blob)
+  const attach = useCallback(
+    async (render: () => Promise<Blob>, signature?: string) => {
+      if (signature) {
+        const exists = attachments.some((item) => item.signature === signature)
+        if (exists) {
+          setStatus('ready')
+          setError(null)
+          return
+        }
+      }
+      if (attachments.length >= 2) {
+        setStatus('ready')
+        return
+      }
 
-      const previewUrl = URL.createObjectURL(blob)
-      previewUrlRef.current.push(previewUrl)
+      setStatus('rendering')
+      setError(null)
+      try {
+        const blob = await render()
+        setStatus('uploading')
+        const url = await uploadDesign(blob)
 
-      setAttachments((current) => {
-        if (current.length >= 2) return current
-        return [...current, { url, previewUrl }]
-      })
-      setStatus('ready')
-    } catch (cause) {
-      console.error('No se pudo adjuntar el diseño:', cause)
-      setError('No se pudo preparar el diseño para el mail. Probá de nuevo.')
-      setStatus('error')
-    }
-  }, [])
+        const previewUrl = URL.createObjectURL(blob)
+        previewUrlRef.current.push(previewUrl)
+
+        setAttachments((current) => {
+          if (current.length >= 2) return current
+          if (signature && current.some((item) => item.signature === signature)) return current
+          return [...current, { url, previewUrl, signature }]
+        })
+        setStatus('ready')
+      } catch (cause) {
+        console.error('No se pudo adjuntar el diseño:', cause)
+        setError('No se pudo preparar el diseño para el mail. Probá de nuevo.')
+        setStatus('error')
+      }
+    },
+    [attachments],
+  )
 
   const value = useMemo(
     () => ({

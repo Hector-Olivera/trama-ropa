@@ -186,28 +186,74 @@ export function EditorSection() {
     return () => window.removeEventListener('keydown', onKeyDown)
   }, [editor])
 
+  const isCurrentSaved = useMemo(() => {
+    if (saved.length === 0) return false
+    const current = {
+      productId,
+      layers: editor.layers,
+      zoom,
+    }
+    return saved.some((item) => {
+      if (item.id === 'autosave') return false
+      if (item.productId !== current.productId) return false
+      if ((item.zoom ?? 1) !== current.zoom) return false
+      if (item.layers.length !== current.layers.length) return false
+      return item.layers.every((layer, index) => {
+        const other = current.layers[index]
+        if (!other) return false
+        return (
+          layer.id === other.id &&
+          layer.visible === other.visible &&
+          layer.x === other.x &&
+          layer.y === other.y &&
+          layer.width === other.width &&
+          layer.height === other.height &&
+          layer.rotation === other.rotation &&
+          layer.opacity === other.opacity
+        )
+      })
+    })
+  }, [editor.layers, productId, saved, zoom])
+
+  const designSignature = useMemo(() => {
+    return `${productId}|${zoom}|${editor.layers
+      .map(
+        (layer) =>
+          `${layer.id}:${layer.type}:${layer.visible}:${layer.x},${layer.y},${layer.width},${layer.height},${layer.rotation},${layer.opacity}`,
+      )
+      .join('|')}`
+  }, [editor.layers, productId, zoom])
+
   const handleAttach = useCallback(() => {
     const stage = stageRef.current
     if (!stage || !product) return
-    void attachment.attach(async () => {
-      const { blob } = await renderDesignBlob(
-        stage,
-        {
-          displayScale: metrics.scale,
-          offsetX: metrics.offsetX,
-          offsetY: metrics.offsetY,
-        },
-        product,
-        { scale: 3, format: 'png' },
-      )
-      return blob
-    })
-  }, [attachment, metrics, product])
+    void attachment.attach(
+      async () => {
+        const { blob } = await renderDesignBlob(
+          stage,
+          {
+            displayScale: metrics.scale,
+            offsetX: metrics.offsetX,
+            offsetY: metrics.offsetY,
+          },
+          product,
+          { scale: 3, format: 'png' },
+        )
+        return blob
+      },
+      designSignature,
+    )
+  }, [attachment, designSignature, metrics, product])
 
-  const handleSaveJump = () => {
+  const handleSaveJump = useCallback(() => {
     setHighlightSaved(true)
     scrollToId('mis-disenos')
-  }
+  }, [])
+
+  const handleRequestSave = useCallback(() => {
+    setHighlightSaved(true)
+    scrollToId('mis-disenos')
+  }, [])
 
   const handleSaveVersion = () => {
     saveDesign({
@@ -317,6 +363,8 @@ export function EditorSection() {
                   attachState={attachment.status}
                   attachmentCount={attachment.count}
                   onSaveJump={handleSaveJump}
+                  isSaved={isCurrentSaved}
+                  onRequestSave={handleRequestSave}
                 />
 
                 <div className="relative">

@@ -53,6 +53,12 @@ cambia, se reescribe acá. `AGENTS.md` tiene las reglas de trabajo y los comando
   contenido (no hardcodear atajos: se editan en el admin); cierra al navegar y con Escape.
   Las secciones usan `py-10 md:py-16` (el desktop conserva el espaciado grande) y las 4 fotos
   de "Cómo funciona" van en una sola fila (`grid-cols-4`) también en mobile.
+- **Barra del editor** (`EditorToolbar`): una sola línea con scroll horizontal interno. Los
+  carteles (`limit` / `save-first` / `limit-save` / `attached`) se dibujan con
+  `position: fixed` anclados al rect del botón: un `absolute` dentro de un contenedor con
+  `overflow-x-auto` queda **recortado** (CSS computa `overflow-y: auto`). Adjuntar nunca navega:
+  si falta guardar sólo destella "Guardar" (`animate-glow-pulse`, 3 s) y avisa; un diseño ya
+  adjuntado (misma firma) muestra "Este diseño ya está adjuntado" y no vuelve a subirse.
 
 ## Supabase
 

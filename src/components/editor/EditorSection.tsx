@@ -56,7 +56,6 @@ export function EditorSection() {
   const stageRef = useRef<Konva.Stage>(null)
   const [shellRef, shellSize] = useElementSize<HTMLDivElement>()
   const [editingId, setEditingId] = useState<string | null>(null)
-  const [exporting] = useState(false)
   const [designName, setDesignName] = useState(boot?.name ?? 'Mi diseño')
   // El zoom pertenece a la prenda que se está viendo: si cambia la prenda,
   // vuelve al tamaño original sin que haya que resetearlo a mano en cada camino
@@ -205,6 +204,11 @@ export function EditorSection() {
     [designSnapshot, saved],
   )
 
+  const isAlreadyAttached = useMemo(
+    () => attachment.attachments.some((item) => item.signature === designSnapshot),
+    [attachment.attachments, designSnapshot],
+  )
+
   const handleAttach = useCallback(() => {
     const stage = stageRef.current
     if (!stage || !product) return
@@ -227,11 +231,6 @@ export function EditorSection() {
   }, [attachment, designSnapshot, metrics, product])
 
   const handleSaveJump = useCallback(() => {
-    setHighlightSaved(true)
-    scrollToId('mis-disenos')
-  }, [])
-
-  const handleRequestSave = useCallback(() => {
     setHighlightSaved(true)
     scrollToId('mis-disenos')
   }, [])
@@ -338,14 +337,13 @@ export function EditorSection() {
                   onUndo={editor.undo}
                   onRedo={editor.redo}
                   onClear={editor.clearLayers}
-                  exporting={exporting}
                   canAttach={isSupabaseConfigured()}
                   onAttach={handleAttach}
                   attachState={attachment.status}
                   attachmentCount={attachment.count}
+                  isAlreadyAttached={isAlreadyAttached}
                   onSaveJump={handleSaveJump}
                   isSaved={isCurrentSaved}
-                  onRequestSave={handleRequestSave}
                 />
 
                 <div className="relative">

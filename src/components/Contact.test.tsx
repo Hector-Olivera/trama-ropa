@@ -118,4 +118,19 @@ describe('Contact', () => {
     expect(body.message).toContain('20 remeras')
     expect(body.message).toContain('Mi diseño 1: https://supabase.test/sign/diseno-abc.png?t=firma')
   })
+
+  it('limpia los adjuntos al enviar con éxito', async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      json: async () => ({ success: true }),
+    } as unknown as Response)
+    vi.stubGlobal('fetch', fetchMock)
+    const attachment = attachmentValue()
+    renderContact(attachment)
+
+    await fillForm('20 remeras')
+
+    fireEvent.click(screen.getByRole('button', { name: 'Enviar consulta' }))
+
+    await waitFor(() => expect(attachment.clear).toHaveBeenCalledTimes(1))
+  })
 })

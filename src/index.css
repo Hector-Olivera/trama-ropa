@@ -159,3 +159,7 @@ input[type='color'].trama-color::-webkit-color-swatch {
 .animate-glow-pulse {
   animation: glow-pulse 1s ease-out 3;
 }
+
+.animate-glow-pulse-loop {
+  animation: glow-pulse 1.6s ease-out infinite;
+}

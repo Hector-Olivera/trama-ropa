@@ -79,6 +79,14 @@ cambia, se reescribe acá. `AGENTS.md` tiene las reglas de trabajo y los comando
 
 - El formulario usa **Web3Forms** (sin backend; `VITE_CONTACT_ACCESS_KEY`, pública). El card
   de email es un `mailto:` (abre el cliente de correo; el "elegí una app" es del SO, no un bug).
+  Los diseños adjuntados viajan como **link firmado** en el cuerpo del mensaje; al enviar con
+  éxito se limpian (`clear()` del contexto, revoca las vistas previas).
+- **Botón flotante** (`FloatingAttachment`, montado en `Landing` junto a los providers):
+  aparece únicamente mientras haya diseños adjuntados. Modo **"Enviar Diseño"** ↓ (destello
+  continuo `animate-glow-pulse-loop`) → scroll a `#contacto`; modo **"Volver"** ↑ sin destello →
+  scroll a `#editor`. El modo se detecta con `IntersectionObserver` sobre `#contacto`
+  (`rootMargin: '-40% 0px -40% 0px'`), no con el click, para que la etiqueta sea correcta aun
+  scrolleando a mano. En tests jsdom el IO se stubbea a mano (jsdom no lo implementa).
 
 ## Deploy
 

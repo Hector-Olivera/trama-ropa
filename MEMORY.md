@@ -56,9 +56,11 @@ cambia, se reescribe acá. `AGENTS.md` tiene las reglas de trabajo y los comando
 - **Barra del editor** (`EditorToolbar`): una sola línea con scroll horizontal interno. Los
   carteles (`limit` / `save-first` / `limit-save` / `attached`) se dibujan con
   `position: fixed` anclados al rect del botón: un `absolute` dentro de un contenedor con
-  `overflow-x-auto` queda **recortado** (CSS computa `overflow-y: auto`). Adjuntar nunca navega:
-  si falta guardar sólo destella "Guardar" (`animate-glow-pulse`, 3 s) y avisa; un diseño ya
-  adjuntado (misma firma) muestra "Este diseño ya está adjuntado" y no vuelve a subirse.
+  `overflow-x-auto` queda **recortado** (CSS computa `overflow-y: auto`). Se manejan **sólo por
+  puntero**: aparecen al posar el cursor (o al tocar, para mobile), se cierran al salir, y un
+  `pointerdown`/`scroll` en `window` los descarta (sin timers, así no quedan pegados). Adjuntar
+  nunca navega: si falta guardar sólo destella "Guardar" (`animate-glow-pulse`, 3 s) y avisa;
+  un diseño ya adjuntado (misma firma) muestra "Este diseño ya está adjuntado" y no se resube.
 
 ## Supabase
 

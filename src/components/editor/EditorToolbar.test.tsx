@@ -95,4 +95,24 @@ describe('EditorToolbar', () => {
     expect(screen.queryByRole('status')).toBeNull()
     expect(onAttach).toHaveBeenCalledTimes(1)
   })
+
+  it('muestra el cartel al posar el cursor y lo cierra al salir', () => {
+    renderToolbar({ isSaved: false })
+
+    fireEvent.pointerOver(attachButton())
+    expect(screen.getByRole('status').textContent).toBe('Debes guardar tu diseño primero')
+
+    fireEvent.pointerOut(attachButton(), { relatedTarget: document.body })
+    expect(screen.queryByRole('status')).toBeNull()
+  })
+
+  it('cierra el cartel al tocar fuera de la barra', () => {
+    renderToolbar({ isSaved: false })
+
+    fireEvent.click(attachButton())
+    expect(screen.getByRole('status').textContent).toBe('Debes guardar tu diseño primero')
+
+    fireEvent.pointerDown(document.body)
+    expect(screen.queryByRole('status')).toBeNull()
+  })
 })

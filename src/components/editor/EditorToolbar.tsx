@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import type { AttachmentStatus } from '../DesignAttachment'
 
 type TipKind = 'limit' | 'save-first' | 'limit-save' | 'attached'
@@ -21,7 +21,7 @@ type Props = {
   isSaved: boolean
 }
 
-const TIP_DURATION = 3000
+const GLOW_DURATION = 3000
 const MAX_ATTACHMENTS = 2
 
 const TIP_TEXT: Record<TipKind, string> = {
@@ -53,16 +53,17 @@ export function EditorToolbar({
   const [tipPosition, setTipPosition] = useState<TipPosition | null>(null)
   const [saveGlow, setSaveGlow] = useState(false)
   const attachRef = useRef<HTMLButtonElement | null>(null)
-  const tipTimer = useRef<number | null>(null)
   const glowTimer = useRef<number | null>(null)
-  const hovering = useRef(false)
 
-  const clearTipTimer = () => {
-    if (tipTimer.current !== null) {
-      window.clearTimeout(tipTimer.current)
-      tipTimer.current = null
-    }
-  }
+  const reason: TipKind | null = atLimit
+    ? isSaved
+      ? 'limit'
+      : 'limit-save'
+    : isAlreadyAttached
+      ? 'attached'
+      : isSaved
+        ? null
+        : 'save-first'
 
   const clearGlowTimer = () => {
     if (glowTimer.current !== null) {
@@ -71,7 +72,11 @@ export function EditorToolbar({
     }
   }
 
-  const showTip = (kind: TipKind) => {
+  const showTip = () => {
+    if (!reason) {
+      setTip(null)
+      return
+    }
     const rect = attachRef.current?.getBoundingClientRect()
     if (rect) {
       setTipPosition({
@@ -79,17 +84,10 @@ export function EditorToolbar({
         right: window.innerWidth - rect.right,
       })
     }
-    setTip(kind)
-    clearTipTimer()
-    tipTimer.current = window.setTimeout(() => {
-      tipTimer.current = null
-      if (hovering.current) return
-      setTip(null)
-    }, TIP_DURATION)
+    setTip(reason)
   }
 
   const hideTip = () => {
-    clearTipTimer()
     setTip(null)
   }
 
@@ -99,49 +97,33 @@ export function EditorToolbar({
     glowTimer.current = window.setTimeout(() => {
       setSaveGlow(false)
       glowTimer.current = null
-    }, TIP_DURATION)
+    }, GLOW_DURATION)
   }
 
-  const limitKind: TipKind = isSaved ? 'limit' : 'limit-save'
+  useEffect(() => {
+    if (!tip) return
+    const dismiss = () => setTip(null)
+    window.addEventListener('pointerdown', dismiss, true)
+    window.addEventListener('scroll', dismiss, true)
+    return () => {
+      window.removeEventListener('pointerdown', dismiss, true)
+      window.removeEventListener('scroll', dismiss, true)
+    }
+  }, [tip])
 
   const handleAttachClick = () => {
     if (attaching || !hasLayers) return
+    showTip()
     if (atLimit) {
-      showTip(limitKind)
       if (!isSaved) flashSave()
       return
     }
-    if (isAlreadyAttached) {
-      showTip('attached')
-      return
-    }
+    if (isAlreadyAttached) return
     if (!isSaved) {
-      showTip('save-first')
       flashSave()
       return
     }
-    hideTip()
     onAttach()
-  }
-
-  const handleAttachEnter = () => {
-    hovering.current = true
-    clearTipTimer()
-    if (atLimit) {
-      setTip(limitKind)
-      const rect = attachRef.current?.getBoundingClientRect()
-      if (rect) {
-        setTipPosition({
-          bottom: window.innerHeight - rect.top + 8,
-          right: window.innerWidth - rect.right,
-        })
-      }
-    }
-  }
-
-  const handleAttachLeave = () => {
-    hovering.current = false
-    if (atLimit) hideTip()
   }
 
   return (
@@ -176,8 +158,8 @@ export function EditorToolbar({
               ref={attachRef}
               type="button"
               onClick={handleAttachClick}
-              onMouseEnter={handleAttachEnter}
-              onMouseLeave={handleAttachLeave}
+              onPointerEnter={showTip}
+              onPointerLeave={hideTip}
               disabled={attaching || !hasLayers}
               className={`shrink-0 rounded-md border px-3.5 py-1.5 text-xs font-bold whitespace-nowrap transition disabled:cursor-not-allowed disabled:opacity-40 ${
                 attachmentCount > 0 && !atLimit

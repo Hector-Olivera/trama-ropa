@@ -26,14 +26,14 @@ export function FloatingAttachment() {
     ? 'M2 22 L60 2 L118 22 V54 H2 Z'
     : 'M2 2 H118 V34 L60 54 L2 34 Z'
 
-  const nudge = atContact ? 'pt-2.5' : 'pb-2.5'
+  const nudge = atContact ? 'pt-1.5 sm:pt-2.5' : 'pb-1.5 sm:pb-2.5'
 
   return (
     <button
       type="button"
       onClick={() => scrollToId(atContact ? 'editor' : 'contacto')}
       aria-label={atContact ? 'Volver al editor' : 'Ir a contacto para enviar el diseño'}
-      className="group fixed right-4 bottom-4 z-40 flex h-14 w-32 items-center justify-center"
+      className="group fixed right-4 bottom-4 z-40 flex h-10 w-24 items-center justify-center sm:h-12 sm:w-28"
     >
       <svg
         viewBox="0 0 120 56"
@@ -49,7 +49,7 @@ export function FloatingAttachment() {
         />
       </svg>
       <span
-        className={`relative flex flex-col items-center text-xs font-bold leading-tight tracking-wide text-brand-light transition-colors duration-200 group-hover:text-brand-black ${nudge}`}
+        className={`relative flex flex-col items-center text-[10px] font-bold leading-tight tracking-wide text-brand-light transition-colors duration-200 group-hover:text-brand-black sm:text-xs ${nudge}`}
       >
         {atContact ? 'Volver' : 'Enviar Diseño'}
       </span>

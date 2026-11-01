@@ -163,3 +163,19 @@ input[type='color'].trama-color::-webkit-color-swatch {
 .animate-glow-pulse-loop {
   animation: glow-pulse 1.6s ease-out infinite;
 }
+
+@keyframes glow-arc {
+  0% {
+    filter: drop-shadow(0 0 3px rgba(0, 217, 255, 0.7));
+  }
+  70% {
+    filter: drop-shadow(0 0 10px rgba(0, 217, 255, 0));
+  }
+  100% {
+    filter: drop-shadow(0 0 3px rgba(0, 217, 255, 0.7));
+  }
+}
+
+.animate-glow-arc-loop {
+  animation: glow-arc 1.6s ease-out infinite;
+}

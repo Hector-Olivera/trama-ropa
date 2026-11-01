@@ -82,11 +82,15 @@ cambia, se reescribe acá. `AGENTS.md` tiene las reglas de trabajo y los comando
   Los diseños adjuntados viajan como **link firmado** en el cuerpo del mensaje; al enviar con
   éxito se limpian (`clear()` del contexto, revoca las vistas previas).
 - **Botón flotante** (`FloatingAttachment`, montado en `Landing` junto a los providers):
-  aparece únicamente mientras haya diseños adjuntados. Modo **"Enviar Diseño"** ↓ (destello
-  continuo `animate-glow-pulse-loop`) → scroll a `#contacto`; modo **"Volver"** ↑ sin destello →
-  scroll a `#editor`. El modo se detecta con `IntersectionObserver` sobre `#contacto`
-  (`rootMargin: '-40% 0px -40% 0px'`), no con el click, para que la etiqueta sea correcta aun
-  scrolleando a mano. En tests jsdom el IO se stubbea a mano (jsdom no lo implementa).
+  aparece únicamente mientras haya diseños adjuntados. Es un **flecha SVG con el texto
+  adentro** (punta abajo "Enviar Diseño", punta arriba "Volver"; `fill` negro/65% +
+  borde cyan `stroke-brand-cyan`, hover se llena de cyan y el texto pasa a negro; `vectorEffect`
+  para que el borde no se deforme). Modo Enviar destella en loop con
+  `animate-glow-arc-loop` (**drop-shadow**, no `box-shadow`: el glow cuadrado no sigue la
+  silueta); Volver no destella. Scroll a `#contacto`/`#editor`; el modo se detecta con
+  `IntersectionObserver` sobre `#contacto` (`rootMargin: '-40% 0px -40% 0px'`), no con el click,
+  para que la etiqueta sea correcta aun scrolleando a mano. En tests jsdom el IO se stubbea a
+  mano (jsdom no lo implementa).
 
 ## Deploy
 

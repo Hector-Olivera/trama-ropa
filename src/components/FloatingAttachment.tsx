@@ -22,29 +22,37 @@ export function FloatingAttachment() {
 
   if (count === 0) return null
 
-  if (atContact) {
-    return (
-      <button
-        type="button"
-        onClick={() => scrollToId('editor')}
-        aria-label="Volver al editor"
-        className="fixed right-4 bottom-4 z-40 flex items-center gap-2 rounded-full border border-brand-line bg-brand-surface px-4 py-2.5 text-xs font-bold text-brand-light shadow-lg transition hover:border-brand-cyan hover:text-brand-cyan"
-      >
-        <span aria-hidden="true">↑</span>
-        Volver
-      </button>
-    )
-  }
+  const shape = atContact
+    ? 'M2 22 L60 2 L118 22 V54 H2 Z'
+    : 'M2 2 H118 V34 L60 54 L2 34 Z'
+
+  const nudge = atContact ? 'pt-2.5' : 'pb-2.5'
 
   return (
     <button
       type="button"
-      onClick={() => scrollToId('contacto')}
-      aria-label="Ir a contacto para enviar el diseño"
-      className="animate-glow-pulse-loop fixed right-4 bottom-4 z-40 flex items-center gap-2 rounded-full bg-brand-cyan px-4 py-2.5 text-xs font-bold text-brand-black shadow-lg transition hover:bg-brand-pink hover:text-white"
+      onClick={() => scrollToId(atContact ? 'editor' : 'contacto')}
+      aria-label={atContact ? 'Volver al editor' : 'Ir a contacto para enviar el diseño'}
+      className="group fixed right-4 bottom-4 z-40 flex h-14 w-32 items-center justify-center"
     >
-      <span aria-hidden="true">↓</span>
-      Enviar Diseño
+      <svg
+        viewBox="0 0 120 56"
+        preserveAspectRatio="none"
+        aria-hidden="true"
+        className={`absolute inset-0 h-full w-full ${atContact ? '' : 'animate-glow-arc-loop'}`}
+      >
+        <path
+          d={shape}
+          vectorEffect="non-scaling-stroke"
+          className="fill-brand-black/65 stroke-brand-cyan transition-[fill] duration-200 group-hover:fill-brand-cyan/90 group-hover:stroke-brand-black/20"
+          strokeWidth={2}
+        />
+      </svg>
+      <span
+        className={`relative flex flex-col items-center text-xs font-bold leading-tight tracking-wide text-brand-light transition-colors duration-200 group-hover:text-brand-black ${nudge}`}
+      >
+        {atContact ? 'Volver' : 'Enviar Diseño'}
+      </span>
     </button>
   )
 }

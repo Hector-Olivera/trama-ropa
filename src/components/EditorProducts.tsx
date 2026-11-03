@@ -31,6 +31,7 @@ type EditorProductsContextValue = {
   selectedId: string
   /** Cuántas prendas del catálogo trajo el visitante (no cuenta las del admin). */
   localCount: number
+  localProducts: ProductView[]
   select: (productId: string) => void
   /** Suma una foto del catálogo como prenda editable y la deja seleccionada. */
   addFromCatalog: (item: CatalogItem) => Promise<ProductView>
@@ -125,11 +126,12 @@ export function EditorProductsProvider({ children }: { children: ReactNode }) {
       products,
       selectedId,
       localCount: localProducts.length,
+      localProducts,
       select,
       addFromCatalog,
       selectById,
     }),
-    [products, selectedId, localProducts.length, select, addFromCatalog, selectById],
+    [products, selectedId, localProducts, select, addFromCatalog, selectById],
   )
 
   return <EditorProductsContext.Provider value={value}>{children}</EditorProductsContext.Provider>

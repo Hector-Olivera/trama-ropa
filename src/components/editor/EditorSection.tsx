@@ -36,7 +36,7 @@ const isTypingTarget = (target: EventTarget | null): boolean =>
 
 export function EditorSection() {
   const { content } = useContent()
-  const { products, selectedId: productId, select, localCount, selectById } =
+  const { products, selectedId: productId, select, localCount, selectById, localProducts } =
     useEditorProducts()
   const attachment = useDesignAttachment()
 
@@ -264,6 +264,11 @@ export function EditorSection() {
   const handleSelectProduct = (nextProductId: string) => {
     setProductMissing(false)
     setZoomFor({ productId: nextProductId, value: ZOOM_MIN })
+    for (const layer of editor.layers) {
+      if (layer.type === 'image' && layer.visible) {
+        editor.updateLayer(layer.id, { visible: false })
+      }
+    }
     select(nextProductId)
   }
 
@@ -305,6 +310,7 @@ export function EditorSection() {
                   onChange={handleSelectProduct}
                   layerCount={editor.layers.length}
                   localCount={localCount}
+                  userAddedIds={localProducts.map((item) => item.id)}
                 />
 
                 {productMissing && (

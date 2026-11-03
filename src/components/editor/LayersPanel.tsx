@@ -1,3 +1,4 @@
+import { MediaImage } from '../../content/MediaImage'
 import type { Layer } from '../../types'
 
 type Props = {
@@ -43,16 +44,24 @@ export function LayersPanel({
                 className="min-w-0 flex-1 text-left"
               >
                 <span className="flex items-center gap-1.5">
-                  <span className="text-[10px] text-brand-muted">
-                    {layer.type === 'image' ? 'IMG' : 'TXT'}
-                  </span>
-                  <span
-                    className={`truncate text-[11px] font-semibold ${
-                      active ? 'text-brand-cyan' : 'text-brand-light'
-                    }`}
-                  >
-                    {layer.type === 'text' ? layer.text || 'Texto' : layer.name}
-                  </span>
+                  {layer.type === 'image' ? (
+                    <MediaImage
+                      src={layer.src}
+                      alt=""
+                      className="h-6 w-6 shrink-0 rounded object-cover"
+                    />
+                  ) : (
+                    <span className="text-[10px] text-brand-muted">TXT</span>
+                  )}
+                  {layer.type === 'text' && (
+                    <span
+                      className={`truncate text-[11px] font-semibold ${
+                        active ? 'text-brand-cyan' : 'text-brand-light'
+                      }`}
+                    >
+                      {layer.text || 'Texto'}
+                    </span>
+                  )}
                 </span>
               </button>
 

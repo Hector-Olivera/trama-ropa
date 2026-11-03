@@ -61,6 +61,15 @@ cambia, se reescribe acá. `AGENTS.md` tiene las reglas de trabajo y los comando
   `pointerdown`/`scroll` en `window` los descarta (sin timers, así no quedan pegados). Adjuntar
   nunca navega: si falta guardar sólo destella "Guardar" (`animate-glow-pulse`, 3 s) y avisa;
   un diseño ya adjuntado (misma firma) muestra "Este diseño ya está adjuntado" y no se resube.
+- **Selector de prenda y Capas**: en desktop las prendas van en un **carrusel** de una fila
+  (`overflow-x-auto` + `snap-x`, `hidden lg:block`); en mobile siguen en grid de 2. El carrusel
+  arranca scrolleado a la **primera prenda que sumó el visitante** (`userAddedIds` sale de
+  `localProducts`). En **Capas**, las capas `image` muestran una **miniatura** vía `MediaImage`
+  (no el tag "IMG"/nombre: se identifica el logo de un vistazo; `name` no es editable, así que
+  no se pierde nada). Al **cambiar de prenda** desde el selector, los logos visibles se
+  **ocultan** (no se borran: quedan en Capas con el ojo para volver a mostrarlos; los textos se
+  mantienen), así una prenda nueva no arrastra estampas de la anterior — misma filosofía que
+  "Vaciar". La nota del selector explica el comportamiento.
 
 ## Supabase
 

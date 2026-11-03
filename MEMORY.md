@@ -61,15 +61,26 @@ cambia, se reescribe acá. `AGENTS.md` tiene las reglas de trabajo y los comando
   `pointerdown`/`scroll` en `window` los descarta (sin timers, así no quedan pegados). Adjuntar
   nunca navega: si falta guardar sólo destella "Guardar" (`animate-glow-pulse`, 3 s) y avisa;
   un diseño ya adjuntado (misma firma) muestra "Este diseño ya está adjuntado" y no se resube.
-- **Selector de prenda y Capas**: en desktop las prendas van en un **carrusel** de una fila
-  (`overflow-x-auto` + `snap-x`, `hidden lg:block`); en mobile siguen en grid de 2. El carrusel
-  arranca scrolleado a la **primera prenda que sumó el visitante** (`userAddedIds` sale de
-  `localProducts`). En **Capas**, las capas `image` muestran una **miniatura** vía `MediaImage`
-  (no el tag "IMG"/nombre: se identifica el logo de un vistazo; `name` no es editable, así que
-  no se pierde nada). Al **cambiar de prenda** desde el selector, los logos visibles se
-  **ocultan** (no se borran: quedan en Capas con el ojo para volver a mostrarlos; los textos se
-  mantienen), así una prenda nueva no arrastra estampas de la anterior — misma filosofía que
-  "Vaciar". La nota del selector explica el comportamiento.
+- **Selector de prenda**: el **carrusel es para mobile** (`lg:hidden`), no para el desktop. Va
+  en una fila con **scroll horizontal sin barra visible** (clase `.trama-strip`: `scrollbar-width:
+  none` + `::-webkit-scrollbar { display: none }`), snap, y **flechas `‹ ›`** translúcidas
+  (círculos `bg-brand-black/70 backdrop-blur`, `opacity-70`, hover cyan) que se **ocultan en cada
+  extremo** y sólo aparece si hay overflow (paso de 120 px = una tarjeta). En **desktop** queda la
+  grilla de 2 columnas **siempre como antes** (`hidden lg:grid`, orden original). El carrusel
+  muestra las prendas **en orden inverso** y arranca scrolleado a la **primera que sumó el
+  visitante** (`userAddedIds`, memoizado en `EditorSection` con `useMemo` para que el efecto no se
+  recue en cada render). Las métricas de las flechas salen de `onScroll` + `resize` +
+  `requestAnimationFrame` (callbacks: nunca setState sincróno en el body de un effect).
+- **Capas / miniaturas**: las capas `image` muestran la **miniatura** del logo en vez del tag
+  "IMG"/nombre (`name` no es editable; `alt={layer.name}` para accesibilidad). **Ojo: hay DOS
+  namespaces `trama:blob:`** — los logos del editor viven en IndexedDB local y se resuelven con
+  `resolveDrawableSrc` (`lib/storage.ts`, con cache de object URLs), que es lo que usa el canvas.
+  `MediaImage`/`useResolvedImage` resuelven con el driver de contenido: con Supabase activo
+  `resolveMediaSrc` devuelve el ref crudo → `<img src="trama:blob:...">` **rota**. Por eso el
+  editor usa `DrawableImage` (resuelve con `resolveDrawableSrc` y muestra placeholder si el blob
+  ya no existe, nunca una imagen rota). Al **cambiar de prenda** desde el selector, los logos
+  visibles se **ocultan** (no se borran: quedan en Capas con el ojo; los textos se mantienen) —
+  misma filosofía que "Vaciar". La nota del selector explica el comportamiento.
 
 ## Supabase
 

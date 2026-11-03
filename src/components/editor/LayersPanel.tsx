@@ -1,4 +1,4 @@
-import { MediaImage } from '../../content/MediaImage'
+import { DrawableImage } from './DrawableImage'
 import type { Layer } from '../../types'
 
 type Props = {
@@ -45,9 +45,9 @@ export function LayersPanel({
               >
                 <span className="flex items-center gap-1.5">
                   {layer.type === 'image' ? (
-                    <MediaImage
+                    <DrawableImage
                       src={layer.src}
-                      alt=""
+                      alt={layer.name}
                       className="h-6 w-6 shrink-0 rounded object-cover"
                     />
                   ) : (

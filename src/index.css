@@ -151,6 +151,14 @@ input[type='color'].trama-color::-webkit-color-swatch {
   }
 }
 
+.trama-strip {
+  scrollbar-width: none;
+}
+
+.trama-strip::-webkit-scrollbar {
+  display: none;
+}
+
 @keyframes glow-pulse {
   0% { box-shadow: 0 0 0 0 rgba(0, 217, 255, 0.7); }
   70% { box-shadow: 0 0 0 6px rgba(0, 217, 255, 0); }

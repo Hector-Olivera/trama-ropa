@@ -39,6 +39,7 @@ export function EditorSection() {
   const { products, selectedId: productId, select, localCount, selectById, localProducts } =
     useEditorProducts()
   const attachment = useDesignAttachment()
+  const userAddedIds = useMemo(() => localProducts.map((item) => item.id), [localProducts])
 
   // El autosave se lee una sola vez y siembra el estado inicial. Hacerlo en un
   // effect seria un setState en render, que la regla react-hooks v7 marca.
@@ -310,7 +311,7 @@ export function EditorSection() {
                   onChange={handleSelectProduct}
                   layerCount={editor.layers.length}
                   localCount={localCount}
-                  userAddedIds={localProducts.map((item) => item.id)}
+                  userAddedIds={userAddedIds}
                 />
 
                 {productMissing && (

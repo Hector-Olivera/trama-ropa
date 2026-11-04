@@ -16,7 +16,6 @@ import { EditorToolbar } from './EditorToolbar'
 import { LayersPanel } from './LayersPanel'
 import { LogoUploader } from './LogoUploader'
 import { ProductPicker } from './ProductPicker'
-import { PropertiesPanel } from './PropertiesPanel'
 import { ZoomControl } from './ZoomControl'
 import { RichTitle } from '../RichTitle'
 
@@ -96,6 +95,15 @@ export function EditorSection() {
     [editor],
   )
 
+  const handleSelectLayer = useCallback(
+    (layerId: string) => {
+      const layer = editor.layers.find((item) => item.id === layerId)
+      if (layer && !layer.visible) handleCommit(layerId, { visible: true })
+      editor.setSelectedId(layerId)
+    },
+    [editor, handleCommit],
+  )
+
   const handleZoom = useCallback(
     (value: number) => setZoomFor({ productId, value: clampZoom(value) }),
     [productId],
@@ -157,7 +165,7 @@ export function EditorSection() {
       if (event.key === 'Delete' || event.key === 'Backspace') {
         if (!editor.selectedId) return
         event.preventDefault()
-        editor.deleteSelected()
+        handleCommit(editor.selectedId, { visible: false })
         return
       }
 
@@ -184,7 +192,7 @@ export function EditorSection() {
 
     window.addEventListener('keydown', onKeyDown)
     return () => window.removeEventListener('keydown', onKeyDown)
-  }, [editor])
+  }, [editor, handleCommit])
 
   const designSnapshot = useMemo(
     () => JSON.stringify({ productId, zoom, layers: editor.layers }),
@@ -378,20 +386,13 @@ export function EditorSection() {
                 </div>
 
                 <p className="text-[11px] text-brand-muted">
-                  Doble click en un texto para editarlo · Supr para borrar · Ctrl+Z deshacer ·
+                  Doble click en un texto para editarlo · Supr para ocultar · Ctrl+Z deshacer ·
                   flechas para mover · Shift+flechas para pasos de 10 px
                   {zoom > 1 && ' · Arrastrá la prenda para mover la vista'}
                 </p>
               </div>
 
               <div className="min-w-0 space-y-4 rounded-lg border border-brand-line bg-brand-surface p-3">
-                <PropertiesPanel
-                  layer={editor.selected}
-                  onChange={(patch) => {
-                    if (editor.selectedId) handleCommit(editor.selectedId, patch)
-                  }}
-                />
-
                 <div>
                   <h3 className="mb-2 text-[11px] font-bold uppercase tracking-widest text-brand-muted">
                     Capas
@@ -399,7 +400,8 @@ export function EditorSection() {
                   <LayersPanel
                     layers={editor.layers}
                     selectedId={editor.selectedId}
-                    onSelect={editor.setSelectedId}
+                    onSelect={handleSelectLayer}
+                    onChange={handleCommit}
                     onToggleVisible={(id) => {
                       const layer = editor.layers.find((item) => item.id === id)
                       if (layer) handleCommit(id, { visible: !layer.visible } as Partial<Layer>)

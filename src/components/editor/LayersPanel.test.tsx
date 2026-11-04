@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { cleanup, render, screen, waitFor } from '@testing-library/react'
+import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
+import type { ComponentProps } from 'react'
 import { LayersPanel } from './LayersPanel'
 import { DEFAULT_FILTERS } from '../../types'
 import type { ImageLayer, Layer, TextLayer } from '../../types'
@@ -14,6 +15,7 @@ import { resolveDrawableSrc } from '../../lib/storage'
 
 afterEach(() => {
   cleanup()
+  vi.restoreAllMocks()
 })
 
 function imageLayer(overrides: Partial<ImageLayer> = {}): ImageLayer {
@@ -61,16 +63,20 @@ const textLayer: TextLayer = {
   letterSpacing: 1,
 }
 
-function renderPanel(layers: Layer[]) {
-  return render(
-    <LayersPanel
-      layers={layers}
-      selectedId={null}
-      onSelect={vi.fn()}
-      onToggleVisible={vi.fn()}
-      onRemove={vi.fn()}
-    />,
-  )
+function renderPanel(
+  layers: Layer[],
+  overrides: Partial<ComponentProps<typeof LayersPanel>> = {},
+) {
+  const props = {
+    layers,
+    selectedId: null,
+    onSelect: vi.fn(),
+    onChange: vi.fn(),
+    onToggleVisible: vi.fn(),
+    onRemove: vi.fn(),
+    ...overrides,
+  }
+  return { ...render(<LayersPanel {...props} />), props }
 }
 
 describe('LayersPanel', () => {
@@ -114,5 +120,47 @@ describe('LayersPanel', () => {
 
     expect(screen.getByText('TXT')).toBeTruthy()
     expect(screen.getByText('TU MARCA')).toBeTruthy()
+  })
+
+  it('usa OCULTAR en capas visibles y AGREGAR en capas ocultas', () => {
+    renderPanel([
+      { ...textLayer, id: 'a', visible: true },
+      { ...textLayer, id: 'b', visible: false, text: 'OTRA' },
+    ])
+
+    expect(screen.getByRole('button', { name: 'OCULTAR' })).toBeTruthy()
+    expect(screen.getByRole('button', { name: 'AGREGAR' })).toBeTruthy()
+  })
+
+  it('el botón de texto avisa el cambio de visibilidad', () => {
+    const { props } = renderPanel([{ ...textLayer, visible: false }])
+
+    fireEvent.click(screen.getByRole('button', { name: 'AGREGAR' }))
+
+    expect(props.onToggleVisible).toHaveBeenCalledWith('txt-1')
+  })
+
+  it('la × pide confirmación y sólo borra si se acepta', () => {
+    const confirm = vi.spyOn(window, 'confirm').mockReturnValue(false)
+    const { props } = renderPanel([textLayer])
+
+    fireEvent.click(screen.getByRole('button', { name: 'Eliminar capa' }))
+    expect(confirm).toHaveBeenCalledWith('¿Eliminar esta capa?')
+    expect(props.onRemove).not.toHaveBeenCalled()
+
+    confirm.mockReturnValue(true)
+    fireEvent.click(screen.getByRole('button', { name: 'Eliminar capa' }))
+    expect(props.onRemove).toHaveBeenCalledWith('txt-1')
+  })
+
+  it('el pincel selecciona la capa y abre el desplegable de propiedades', () => {
+    const { props } = renderPanel([textLayer])
+
+    fireEvent.click(screen.getByRole('button', { name: 'Editar propiedades' }))
+
+    expect(props.onSelect).toHaveBeenCalledWith('txt-1')
+    const dialog = screen.getByRole('dialog', { name: 'Propiedades de la capa' })
+    expect(within(dialog).getByText('Opacidad')).toBeTruthy()
+    expect(within(dialog).getByText('Rotación')).toBeTruthy()
   })
 })

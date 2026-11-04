@@ -155,10 +155,6 @@ export function useEditor(
     [reset],
   )
 
-  const deleteSelected = useCallback(() => {
-    if (selectedId) removeLayer(selectedId)
-  }, [removeLayer, selectedId])
-
   const duplicateSelected = useCallback(() => {
     if (selectedId) duplicateLayer(selectedId)
   }, [duplicateLayer, selectedId])
@@ -183,7 +179,6 @@ export function useEditor(
     reorderLayer,
     clearLayers,
     loadLayers,
-    deleteSelected,
     duplicateSelected,
     reorderSelected,
     undo,

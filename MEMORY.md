@@ -88,6 +88,17 @@ cambia, se reescribe acá. `AGENTS.md` tiene las reglas de trabajo y los comando
   ya no existe, nunca una imagen rota). Al **cambiar de prenda** desde el selector, los logos
   visibles se **ocultan** (no se borran: quedan en Capas con el ojo; los textos se mantienen) —
   misma filosofía que "Vaciar". La nota del selector explica el comportamiento.
+- **Panel de Capas (interacción)**: la visibilidad es un botón de texto `OCULTAR` (visible) /
+  `AGREGAR` (oculta), no un ojo. Las propiedades ya **no** se muestran arriba de la lista: cada
+  fila tiene un **pincel** que abre un desplegable (`LayerPropertiesPopover`, `position: fixed`,
+  z-50, ancho `min(20rem, 100vw-16px)`, alto máx. 70vh con scroll interno). Sale **abajo** del
+  botón o **arriba** si no entra: se decide al abrir comparando espacios con el rect del botón,
+  sin medir alturas en effects (regla de `react-hooks` v7). Cierra con Escape, `pointerdown`
+  afuera, scroll de página y resize. Seleccionar una capa (nombre o pincel) la hace **visible**
+  automáticamente. `Supr`/`Backspace` **oculta** la capa seleccionada (ya no borra); borrar es
+  sólo con la `×`, que pide `window.confirm('¿Eliminar esta capa?')` (mismo patrón que el admin).
+  En mobile la fila se acomoda en dos líneas (nombre arriba, acciones abajo a la derecha) para
+  que entren los textos sin apretar la miniatura.
 
 ## Supabase
 

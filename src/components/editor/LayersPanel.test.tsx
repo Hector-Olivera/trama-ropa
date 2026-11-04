@@ -122,6 +122,17 @@ describe('LayersPanel', () => {
     expect(screen.getByText('TU MARCA')).toBeTruthy()
   })
 
+  it('muestra el nombre de la capa de imagen junto a la miniatura', async () => {
+    vi.mocked(resolveDrawableSrc).mockResolvedValue('blob:https://localhost/abc')
+
+    renderPanel([imageLayer({ name: 'mi-logo' })])
+
+    expect(screen.getByText('mi-logo')).toBeTruthy()
+    await waitFor(() =>
+      expect(screen.getByRole('img', { name: 'mi-logo' }).tagName).toBe('IMG'),
+    )
+  })
+
   it('usa OCULTAR en capas visibles y AGREGAR en capas ocultas', () => {
     renderPanel([
       { ...textLayer, id: 'a', visible: true },

@@ -63,7 +63,7 @@ export function LayersPanel({
           return (
             <li key={layer.id} className="lg:w-full">
               <div
-                className={`flex flex-wrap items-center gap-1 rounded border px-1.5 py-1.5 transition ${
+                className={`flex items-center gap-1 rounded border px-1.5 py-1.5 transition ${
                   active
                     ? 'border-brand-cyan bg-brand-cyan/10'
                     : 'border-brand-line hover:border-brand-muted'
@@ -72,7 +72,7 @@ export function LayersPanel({
                 <button
                   type="button"
                   onClick={() => onSelect(layer.id)}
-                  className="min-w-0 w-full text-left lg:w-auto lg:flex-1"
+                  className="min-w-0 flex-1 text-left"
                 >
                   <span className="flex items-center gap-1.5">
                     {layer.type === 'image' ? (
@@ -84,15 +84,13 @@ export function LayersPanel({
                     ) : (
                       <span className="text-[10px] text-brand-muted">TXT</span>
                     )}
-                    {layer.type === 'text' && (
-                      <span
-                        className={`truncate text-[11px] font-semibold ${
-                          active ? 'text-brand-cyan' : 'text-brand-light'
-                        }`}
-                      >
-                        {layer.text || 'Texto'}
-                      </span>
-                    )}
+                    <span
+                      className={`truncate text-[11px] font-semibold ${
+                        active ? 'text-brand-cyan' : 'text-brand-light'
+                      }`}
+                    >
+                      {layer.type === 'text' ? layer.text || 'Texto' : layer.name}
+                    </span>
                   </span>
                 </button>
 
@@ -117,7 +115,7 @@ export function LayersPanel({
                     type="button"
                     onClick={() => onToggleVisible(layer.id)}
                     title={layer.visible ? 'Ocultar capa' : 'Agregar capa al diseño'}
-                    className={`shrink-0 rounded px-1 py-0.5 text-[9px] font-bold uppercase tracking-wide whitespace-nowrap transition ${
+                    className={`shrink-0 rounded px-0.5 py-0.5 text-[8px] font-bold uppercase tracking-wide whitespace-nowrap transition lg:px-1 lg:text-[9px] ${
                       layer.visible
                         ? 'text-brand-muted hover:bg-brand-white/10 hover:text-brand-light'
                         : 'text-brand-cyan hover:bg-brand-cyan/10'
@@ -191,7 +189,7 @@ function IconButton({
       onClick={onClick}
       title={label}
       aria-label={label}
-      className={`w-5 shrink-0 rounded text-center text-[11px] leading-none transition ${
+      className={`w-4 shrink-0 rounded text-center text-[11px] leading-none transition ${
         danger
           ? 'text-brand-muted hover:bg-brand-pink/20 hover:text-brand-pink'
           : 'text-brand-muted hover:bg-brand-white/10 hover:text-brand-light'

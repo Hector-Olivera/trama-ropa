@@ -97,8 +97,17 @@ cambia, se reescribe acá. `AGENTS.md` tiene las reglas de trabajo y los comando
   afuera, scroll de página y resize. Seleccionar una capa (nombre o pincel) la hace **visible**
   automáticamente. `Supr`/`Backspace` **oculta** la capa seleccionada (ya no borra); borrar es
   sólo con la `×`, que pide `window.confirm('¿Eliminar esta capa?')` (mismo patrón que el admin).
-  En mobile la fila se acomoda en dos líneas (nombre arriba, acciones abajo a la derecha) para
-  que entren los textos sin apretar la miniatura.
+  En mobile la fila va en **una sola línea** (`[miniatura] [nombre truncado] [pincel] [texto] [×]`)
+  con botones compactos (`text-[8px]` → `lg:text-[9px]`, `×` en `w-4`); _no_ usar `flex-wrap` en
+  dos líneas: desalineaba la miniatura con los botones y sumaba altura.
+- **Nombres y tope de capas**: las capas `image` muestran el **nombre del archivo subido** sin
+  extensión (`mi-logo.png` → `mi-logo`) en vez de sólo la miniatura; `addImageLayer` acepta
+  `name?` y cae en `"Logo"`. Los duplicados siguen agregando `" copia"`. Tope `MAX_LAYERS = 12`
+  exportado por `useEditor`: `addImageLayer`/`addTextLayer` devuelven `false` si ya hay 12, el
+  encabezado de Capas muestra `n/12` y lo resalta en `brand-cyan` al llegar, y `LogoUploader`
+  recibe `remaining`/`onLimitReached` (recorta archivos de un drop). El aviso bajo los botones
+  ("Llegaste al límite de 12 capas…") aparece sólo al intentar agregar de más; las capas
+  ocultas **también cuentan**. Los logos locales siguen **sin** viajar a Supabase.
 
 ## Supabase
 

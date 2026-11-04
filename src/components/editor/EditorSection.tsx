@@ -6,7 +6,7 @@ import { renderDesignBlob } from '../../lib/exportImage'
 import { isSupabaseConfigured } from '../../lib/env'
 import { scrollToId } from '../../lib/scrollToId'
 import { deleteDesign, cleanupBlobs, listDesigns, saveDesign } from '../../lib/storage'
-import { useEditor } from '../../lib/useEditor'
+import { useEditor, MAX_LAYERS } from '../../lib/useEditor'
 import { useElementSize } from '../../lib/useElementSize'
 import type { Layer, ProductView } from '../../types'
 import { useDesignAttachment } from '../DesignAttachment'
@@ -68,6 +68,9 @@ export function EditorSection() {
   const [saved, setSaved] = useState(() => listDesigns())
   const [highlightSaved, setHighlightSaved] = useState(false)
   const [productMissing, setProductMissing] = useState(false)
+  const [layerLimitNotice, setLayerLimitNotice] = useState(false)
+  const layerCount = editor.layers.length
+  const atLayerLimit = layerCount >= MAX_LAYERS
 
   const signature = useMemo(
     () => signatureOf(productId, designName, editor.layers, zoom),
@@ -329,15 +332,35 @@ export function EditorSection() {
                 )}
                 <div className="space-y-2">
                   <div className="grid grid-cols-2 gap-2">
-                    <LogoUploader onAdd={editor.addImageLayer} />
+                    <LogoUploader
+                      onAdd={(input) => {
+                        setLayerLimitNotice(false)
+                        editor.addImageLayer(input)
+                      }}
+                      remaining={Math.max(0, MAX_LAYERS - layerCount)}
+                      onLimitReached={() => setLayerLimitNotice(true)}
+                    />
                     <button
                       type="button"
-                      onClick={editor.addTextLayer}
+                      onClick={() => {
+                        if (atLayerLimit) {
+                          setLayerLimitNotice(true)
+                          return
+                        }
+                        setLayerLimitNotice(false)
+                        editor.addTextLayer()
+                      }}
                       className="rounded-lg border border-brand-line px-3 py-2.5 text-xs font-semibold text-brand-light transition hover:border-brand-cyan hover:text-brand-cyan"
                     >
                       + Agregar texto
                     </button>
                   </div>
+                  {atLayerLimit && layerLimitNotice && (
+                    <p role="alert" className="text-[11px] leading-snug text-brand-pink">
+                      Llegaste al límite de {MAX_LAYERS} capas. Eliminá alguna para poder agregar
+                      otra.
+                    </p>
+                  )}
                   <p className="text-[10px] leading-snug text-brand-muted">
                     Un PNG con fondo transparente da el mejor resultado.
                   </p>
@@ -394,8 +417,15 @@ export function EditorSection() {
 
               <div className="min-w-0 space-y-4 rounded-lg border border-brand-line bg-brand-surface p-3">
                 <div>
-                  <h3 className="mb-2 text-[11px] font-bold uppercase tracking-widest text-brand-muted">
-                    Capas
+                  <h3 className="mb-2 flex items-center justify-between gap-2 text-[11px] font-bold uppercase tracking-widest text-brand-muted">
+                    <span>Capas</span>
+                    <span
+                      className={`tabular-nums ${
+                        atLayerLimit ? 'text-brand-cyan' : 'text-brand-muted'
+                      }`}
+                    >
+                      {layerCount}/{MAX_LAYERS}
+                    </span>
                   </h3>
                   <LayersPanel
                     layers={editor.layers}

@@ -304,7 +304,7 @@ export function EditorSection() {
         ) : (
           <>
             <div className="grid gap-4 lg:grid-cols-[250px_minmax(0,1fr)_260px]">
-              <div className="space-y-5 rounded-lg border border-brand-line bg-brand-surface p-3">
+              <div className="min-w-0 space-y-5 rounded-lg border border-brand-line bg-brand-surface p-3">
                 <ProductPicker
                   products={products}
                   productId={productId}
@@ -384,7 +384,7 @@ export function EditorSection() {
                 </p>
               </div>
 
-              <div className="space-y-4 rounded-lg border border-brand-line bg-brand-surface p-3">
+              <div className="min-w-0 space-y-4 rounded-lg border border-brand-line bg-brand-surface p-3">
                 <PropertiesPanel
                   layer={editor.selected}
                   onChange={(patch) => {

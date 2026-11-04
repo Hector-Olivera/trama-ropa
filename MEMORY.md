@@ -71,6 +71,13 @@ cambia, se reescribe acá. `AGENTS.md` tiene las reglas de trabajo y los comando
   visitante** (`userAddedIds`, memoizado en `EditorSection` con `useMemo` para que el efecto no se
   recue en cada render). Las métricas de las flechas salen de `onScroll` + `resize` +
   `requestAnimationFrame` (callbacks: nunca setState sincróno en el body de un effect).
+- **Pitfall `min-w-0` (mobile)**: `EditorSection` apila los 3 paneles en un `grid` de **una sola
+  columna compartida** (`grid gap-4 lg:grid-cols-[250px_minmax(0,1fr)_260px]`). Un item sin
+  `min-w-0` hereda `min-width: auto` (min-content de su contenido): el strip del carrusel (fila
+  completa de tarjetas `shrink-0 w-28`) **ensanchaba la columna y toda la página** y, al no haber
+  overflow interno, `measure()` apagaba las flechas y el scroll. El `overflow-x-auto` del strip
+  **no** alcanza: el `min-w-0` va en el **item** del grid (paneles izquierdo y derecho; el del
+  canvas ya lo tenía). Síntoma típico: "no hay carrusel, las fotos se ven una al lado de la otra".
 - **Capas / miniaturas**: las capas `image` muestran la **miniatura** del logo en vez del tag
   "IMG"/nombre (`name` no es editable; `alt={layer.name}` para accesibilidad). **Ojo: hay DOS
   namespaces `trama:blob:`** — los logos del editor viven en IndexedDB local y se resuelven con

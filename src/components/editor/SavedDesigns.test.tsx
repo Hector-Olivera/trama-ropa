@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { cleanup, fireEvent, render, screen } from '@testing-library/react'
+import { act, cleanup, fireEvent, render, screen } from '@testing-library/react'
 import type { Design } from '../../types'
 import { SavedDesigns } from './SavedDesigns'
 
@@ -36,6 +36,8 @@ const baseProps = {
 afterEach(() => {
   cleanup()
   vi.clearAllMocks()
+  vi.restoreAllMocks()
+  vi.useRealTimers()
 })
 
 describe('SavedDesigns', () => {
@@ -128,5 +130,60 @@ describe('SavedDesigns', () => {
 
     expect(screen.getByText('12/12').className).toContain('text-brand-cyan')
     expect(screen.getByRole('alert').textContent).toContain('límite de 12 diseños')
+  })
+
+  it('pide confirmación antes de borrar un diseño', () => {
+    const onDelete = vi.fn()
+    const confirm = vi.spyOn(window, 'confirm').mockReturnValue(false)
+    render(<SavedDesigns {...baseProps} onDelete={onDelete} />)
+
+    fireEvent.click(screen.getByRole('button', { name: 'Borrar Uno' }))
+    expect(confirm).toHaveBeenCalledWith('¿Eliminar este diseño?')
+    expect(onDelete).not.toHaveBeenCalled()
+
+    confirm.mockReturnValue(true)
+    fireEvent.click(screen.getByRole('button', { name: 'Borrar Uno' }))
+    expect(onDelete).toHaveBeenCalledWith('a')
+  })
+
+  it('muestra "Cambios guardados" y se oculta solo', () => {
+    vi.useFakeTimers()
+    const onSaveChanges = vi.fn()
+    render(
+      <SavedDesigns {...baseProps} canSaveChanges onSaveChanges={onSaveChanges} />,
+    )
+
+    fireEvent.click(screen.getByRole('button', { name: 'Guardar cambios' }))
+
+    expect(screen.getByRole('status').textContent).toBe('Cambios guardados')
+    act(() => {
+      vi.advanceTimersByTime(3000)
+    })
+    expect(screen.queryByRole('status')).toBeNull()
+  })
+
+  it('muestra "Diseño guardado" al confirmar y no al entrar en modo nuevo', () => {
+    const onSaveAsNew = vi.fn()
+    const { rerender } = render(
+      <SavedDesigns {...baseProps} onSaveAsNew={onSaveAsNew} />,
+    )
+
+    fireEvent.click(screen.getByRole('button', { name: 'Guardar como nuevo' }))
+    expect(onSaveAsNew).toHaveBeenCalledTimes(1)
+    expect(screen.queryByRole('status')).toBeNull()
+
+    rerender(<SavedDesigns {...baseProps} onSaveAsNew={onSaveAsNew} savingAsNew />)
+    fireEvent.click(screen.getByRole('button', { name: 'Guardar como nuevo' }))
+
+    expect(onSaveAsNew).toHaveBeenCalledTimes(2)
+    expect(screen.getByRole('status').textContent).toBe('Diseño guardado')
+  })
+
+  it('da feedback visual al presionar "Guardar cambios"', () => {
+    render(<SavedDesigns {...baseProps} canSaveChanges />)
+
+    const button = screen.getByRole('button', { name: 'Guardar cambios' })
+    expect(button.className).toContain('active:scale-[0.97]')
+    expect(button.className).toContain('active:bg-brand-cyan/15')
   })
 })

@@ -126,7 +126,13 @@ cambia, se reescribe acá. `AGENTS.md` tiene las reglas de trabajo y los comando
   fuera del bloque de acciones y Enter (confirmar) lo manejan; `autosave` sigue aparte y
   `newName` no entra en la firma. Tope `MAX_SAVED_DESIGNS = 12` (en `storage.ts`): contador
   `n/12` cyan al llegar y aviso rosa al intentar crear el 13.º (el botón sigue clickeable, como
-  en Capas). Borrar el activo limpia el resaltado.
+  en Capas). Borrar el activo limpia el resaltado y pide **`window.confirm('¿Eliminar este
+  diseño?')`** (mismo patrón que Capas). Al guardar, `SavedDesigns` muestra un **cartel fijo 3 s
+  arriba del botón** ("Cambios guardados" para "Guardar cambios", "Diseño guardado" para
+  "Guardar como nuevo"), calculado con el rect del botón (patrón de `EditorToolbar`), con
+  `role="status"` y descarte por scroll/pointerdown; el timer vive en un ref y se limpia al
+  desmontar. "Guardar cambios" tiene feedback al presionar (`active:scale-[0.97]` + tinte cyan) y
+  queda con borde/texto cyan mientras se ve el cartel.
 
 ## Supabase
 

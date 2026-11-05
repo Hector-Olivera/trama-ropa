@@ -1,5 +1,11 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import type { Design } from '../../types'
+
+type NoticeKind = 'changes' | 'new'
+
+type Notice = { kind: NoticeKind; bottom: number; right: number }
+
+const NOTICE_DURATION = 3000
 
 type Props = {
   versions: Design[]
@@ -42,6 +48,10 @@ export function SavedDesigns({
 }: Props) {
   const actionsRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
+  const saveChangesRef = useRef<HTMLButtonElement>(null)
+  const saveAsNewRef = useRef<HTMLButtonElement>(null)
+  const noticeTimer = useRef<number | null>(null)
+  const [notice, setNotice] = useState<Notice | null>(null)
 
   useEffect(() => {
     if (!savingAsNew) return
@@ -56,6 +66,57 @@ export function SavedDesigns({
     document.addEventListener('pointerdown', onPointerDown)
     return () => document.removeEventListener('pointerdown', onPointerDown)
   }, [savingAsNew, onCancelNew])
+
+  useEffect(() => {
+    if (!notice) return
+    const dismiss = () => {
+      if (noticeTimer.current !== null) {
+        window.clearTimeout(noticeTimer.current)
+        noticeTimer.current = null
+      }
+      setNotice(null)
+    }
+    window.addEventListener('pointerdown', dismiss, true)
+    window.addEventListener('scroll', dismiss, true)
+    return () => {
+      window.removeEventListener('pointerdown', dismiss, true)
+      window.removeEventListener('scroll', dismiss, true)
+    }
+  }, [notice])
+
+  useEffect(
+    () => () => {
+      if (noticeTimer.current !== null) window.clearTimeout(noticeTimer.current)
+    },
+    [],
+  )
+
+  const showNotice = (kind: NoticeKind, element: HTMLElement | null) => {
+    const rect = element?.getBoundingClientRect()
+    if (rect) {
+      setNotice({
+        kind,
+        bottom: window.innerHeight - rect.top + 8,
+        right: window.innerWidth - rect.right,
+      })
+    }
+    if (noticeTimer.current !== null) window.clearTimeout(noticeTimer.current)
+    noticeTimer.current = window.setTimeout(() => {
+      setNotice(null)
+      noticeTimer.current = null
+    }, NOTICE_DURATION)
+  }
+
+  const handleSaveChanges = () => {
+    onSaveChanges()
+    showNotice('changes', saveChangesRef.current)
+  }
+
+  const handleSaveAsNew = () => {
+    const confirming = savingAsNew
+    onSaveAsNew()
+    if (confirming) showNotice('new', saveAsNewRef.current)
+  }
 
   const atLimit = savedCount >= maxSaved
 
@@ -86,10 +147,15 @@ export function SavedDesigns({
 
         <div ref={actionsRef} className="ml-auto flex flex-wrap items-center gap-2">
           <button
+            ref={saveChangesRef}
             type="button"
-            onClick={onSaveChanges}
+            onClick={handleSaveChanges}
             disabled={!canSaveChanges}
-            className="rounded border border-brand-line px-3 py-1.5 text-xs font-semibold text-brand-light transition enabled:hover:border-brand-cyan enabled:hover:text-brand-cyan disabled:cursor-not-allowed disabled:opacity-40"
+            className={`rounded border px-3 py-1.5 text-xs font-semibold transition active:scale-[0.97] active:border-brand-cyan active:bg-brand-cyan/15 active:text-brand-cyan disabled:cursor-not-allowed disabled:opacity-40 ${
+              notice?.kind === 'changes'
+                ? 'border-brand-cyan text-brand-cyan'
+                : 'border-brand-line text-brand-light enabled:hover:border-brand-cyan enabled:hover:text-brand-cyan'
+            }`}
           >
             Guardar cambios
           </button>
@@ -106,7 +172,7 @@ export function SavedDesigns({
                 }
                 if (event.key === 'Enter') {
                   event.preventDefault()
-                  onSaveAsNew()
+                  handleSaveAsNew()
                 }
               }}
               aria-label="Nombre del diseño"
@@ -121,13 +187,16 @@ export function SavedDesigns({
               }`}
             />
             <button
+              ref={saveAsNewRef}
               type="button"
-              onClick={onSaveAsNew}
+              onClick={handleSaveAsNew}
               aria-pressed={savingAsNew}
-              className={`rounded border px-3 py-1.5 text-xs font-semibold transition ${
+              className={`rounded border px-3 py-1.5 text-xs font-semibold transition active:scale-[0.97] ${
                 savingAsNew
                   ? 'border-brand-cyan bg-brand-cyan text-brand-black hover:bg-brand-cyan/90'
-                  : 'border-brand-line text-brand-light hover:border-brand-cyan hover:text-brand-cyan'
+                  : notice?.kind === 'new'
+                    ? 'border-brand-cyan text-brand-cyan'
+                    : 'border-brand-line text-brand-light hover:border-brand-cyan hover:text-brand-cyan'
               }`}
             >
               Guardar como nuevo
@@ -181,7 +250,9 @@ export function SavedDesigns({
                 </button>
                 <button
                   type="button"
-                  onClick={() => onDelete(design.id)}
+                  onClick={() => {
+                    if (window.confirm('¿Eliminar este diseño?')) onDelete(design.id)
+                  }}
                   aria-label={`Borrar ${design.name}`}
                   className="w-5 rounded text-center text-brand-muted transition hover:bg-brand-pink/20 hover:text-brand-pink"
                 >
@@ -191,6 +262,17 @@ export function SavedDesigns({
             )
           })}
         </ul>
+      )}
+
+      {notice && (
+        <div
+          role="status"
+          aria-live="polite"
+          style={{ bottom: notice.bottom, right: notice.right }}
+          className="pointer-events-none fixed z-50 max-w-[min(16rem,calc(100vw-1rem))] rounded border border-brand-cyan/70 bg-brand-black px-2 py-1 text-[10px] font-semibold text-brand-cyan shadow-lg"
+        >
+          {notice.kind === 'changes' ? 'Cambios guardados' : 'Diseño guardado'}
+        </div>
       )}
     </div>
   )

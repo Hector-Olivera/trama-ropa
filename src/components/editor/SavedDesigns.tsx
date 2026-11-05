@@ -145,13 +145,16 @@ export function SavedDesigns({
           {saveState === 'saved' && '✓ Guardado en este dispositivo'}
         </span>
 
-        <div ref={actionsRef} className="ml-auto flex flex-wrap items-center gap-2">
+        <div
+          ref={actionsRef}
+          className="flex w-full flex-nowrap items-center gap-1.5 sm:ml-auto sm:w-auto sm:gap-2"
+        >
           <button
             ref={saveChangesRef}
             type="button"
             onClick={handleSaveChanges}
             disabled={!canSaveChanges}
-            className={`rounded border px-3 py-1.5 text-xs font-semibold transition active:scale-[0.97] active:border-brand-cyan active:bg-brand-cyan/15 active:text-brand-cyan disabled:cursor-not-allowed disabled:opacity-40 ${
+            className={`shrink-0 whitespace-nowrap rounded border px-2 py-1.5 text-[10px] font-semibold transition active:scale-[0.97] active:border-brand-cyan active:bg-brand-cyan/15 active:text-brand-cyan disabled:cursor-not-allowed disabled:opacity-40 sm:px-3 sm:text-xs ${
               notice?.kind === 'changes'
                 ? 'border-brand-cyan text-brand-cyan'
                 : 'border-brand-line text-brand-light enabled:hover:border-brand-cyan enabled:hover:text-brand-cyan'
@@ -160,7 +163,7 @@ export function SavedDesigns({
             Guardar cambios
           </button>
 
-          <div className="flex items-center gap-2">
+          <div className="flex min-w-0 flex-1 items-center gap-1.5 sm:flex-none sm:gap-2">
             <input
               ref={inputRef}
               value={savingAsNew ? newName : name}
@@ -180,7 +183,7 @@ export function SavedDesigns({
               tabIndex={savingAsNew ? 0 : -1}
               readOnly={!savingAsNew}
               placeholder={savingAsNew ? 'Nombre del nuevo diseño' : undefined}
-              className={`rounded border bg-brand-black px-2.5 py-1.5 text-xs text-brand-light outline-none transition ${
+              className={`min-w-0 flex-1 rounded border bg-brand-black px-2 py-1.5 text-[10px] text-brand-light outline-none transition sm:flex-none sm:px-2.5 sm:text-xs ${
                 savingAsNew
                   ? 'border-brand-cyan ring-2 ring-brand-cyan/70'
                   : 'invisible border-brand-line'
@@ -191,7 +194,7 @@ export function SavedDesigns({
               type="button"
               onClick={handleSaveAsNew}
               aria-pressed={savingAsNew}
-              className={`rounded border px-3 py-1.5 text-xs font-semibold transition active:scale-[0.97] ${
+              className={`shrink-0 whitespace-nowrap rounded border px-2 py-1.5 text-[10px] font-semibold transition active:scale-[0.97] sm:px-3 sm:text-xs ${
                 savingAsNew
                   ? 'border-brand-cyan bg-brand-cyan text-brand-black hover:bg-brand-cyan/90'
                   : notice?.kind === 'new'

@@ -132,7 +132,9 @@ cambia, se reescribe acá. `AGENTS.md` tiene las reglas de trabajo y los comando
   "Guardar como nuevo"), calculado con el rect del botón (patrón de `EditorToolbar`), con
   `role="status"` y descarte por scroll/pointerdown; el timer vive en un ref y se limpia al
   desmontar. "Guardar cambios" tiene feedback al presionar (`active:scale-[0.97]` + tinte cyan) y
-  queda con borde/texto cyan mientras se ve el cartel.
+  queda con borde/texto cyan mientras se ve el cartel. En mobile las acciones van en **una sola
+  fila** (`flex-nowrap` + `w-full`): botones con `text-[10px]`/`px-2` y el input `min-w-0 flex-1`
+  se achica para entrar; desde `sm` vuelven al tamaño y alineación de escritorio.
 
 ## Supabase
 

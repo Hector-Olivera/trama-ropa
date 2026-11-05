@@ -5,7 +5,7 @@ import { useState } from 'react'
 
 export function Contact() {
   const { content } = useContent()
-  const { attachments, remove, status: attachStatus, error: attachError } = useDesignAttachment()
+  const { attachments, remove, clear, status: attachStatus, error: attachError } = useDesignAttachment()
   const { contact } = content
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
@@ -42,6 +42,7 @@ export function Contact() {
         setEmail('')
         setMessage('')
         setErr(null)
+        clear()
       } else {
         setErr(data.message || 'No se pudo enviar. Probá de nuevo o escribinos por WhatsApp.')
       }

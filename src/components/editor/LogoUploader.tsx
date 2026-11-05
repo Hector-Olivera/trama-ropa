@@ -3,10 +3,18 @@ import { isSupportedImageType, prepareLogoFile } from '../../lib/images'
 import { putLogoBlob } from '../../lib/storage'
 
 type Props = {
-  onAdd: (input: { src: string; naturalWidth: number; naturalHeight: number }) => Promise<void> | void
+  onAdd: (input: {
+    src: string
+    naturalWidth: number
+    naturalHeight: number
+    name: string
+  }) => Promise<void> | void
+  /** Cuántas capas más entran antes del tope. */
+  remaining: number
+  onLimitReached: () => void
 }
 
-export function LogoUploader({ onAdd }: Props) {
+export function LogoUploader({ onAdd, remaining, onLimitReached }: Props) {
   const [dragging, setDragging] = useState(false)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -15,17 +23,30 @@ export function LogoUploader({ onAdd }: Props) {
   const handleFiles = async (files: FileList | null) => {
     if (!files || files.length === 0) return
 
+    const selected = Array.from(files)
+    const accepted = selected.slice(0, Math.max(0, remaining))
+    if (accepted.length === 0) {
+      onLimitReached()
+      return
+    }
+    if (accepted.length < selected.length) onLimitReached()
+
     setBusy(true)
     setError(null)
 
     try {
-      for (const file of Array.from(files)) {
+      for (const file of accepted) {
         if (!isSupportedImageType(file)) {
           throw new Error(`"${file.name}" no es un formato válido. Usá PNG, JPG o WEBP.`)
         }
         const { blob, width, height } = await prepareLogoFile(file)
         // El src que viaja a la capa es la clave persistente, no una object URL.
-        await onAdd({ src: await putLogoBlob(blob), naturalWidth: width, naturalHeight: height })
+        await onAdd({
+          src: await putLogoBlob(blob),
+          naturalWidth: width,
+          naturalHeight: height,
+          name: file.name.replace(/\.[^.]+$/, ''),
+        })
       }
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : 'No se pudo subir el archivo.')
@@ -35,11 +56,19 @@ export function LogoUploader({ onAdd }: Props) {
     }
   }
 
+  const openPicker = () => {
+    if (remaining <= 0) {
+      onLimitReached()
+      return
+    }
+    inputRef.current?.click()
+  }
+
   return (
     <div>
       <button
         type="button"
-        onClick={() => inputRef.current?.click()}
+        onClick={openPicker}
         onDragOver={(event) => {
           event.preventDefault()
           setDragging(true)

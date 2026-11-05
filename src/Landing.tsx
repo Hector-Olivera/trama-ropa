@@ -2,6 +2,7 @@ import { lazy, Suspense } from 'react'
 import { Catalog } from './components/Catalog'
 import { Contact } from './components/Contact'
 import { DesignAttachmentProvider } from './components/DesignAttachment'
+import { FloatingAttachment } from './components/FloatingAttachment'
 import { EditorProductsProvider } from './components/EditorProducts'
 import { Footer } from './components/Footer'
 import { Hero } from './components/Hero'
@@ -52,6 +53,7 @@ export function Landing() {
               <Contact />
             </SectionBoundary>
           </EditorProductsProvider>
+          <FloatingAttachment />
         </DesignAttachmentProvider>
       </main>
       <SectionBoundary>

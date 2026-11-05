@@ -53,6 +53,88 @@ cambia, se reescribe acá. `AGENTS.md` tiene las reglas de trabajo y los comando
   contenido (no hardcodear atajos: se editan en el admin); cierra al navegar y con Escape.
   Las secciones usan `py-10 md:py-16` (el desktop conserva el espaciado grande) y las 4 fotos
   de "Cómo funciona" van en una sola fila (`grid-cols-4`) también en mobile.
+- **Barra del editor** (`EditorToolbar`): una sola línea con scroll horizontal interno. Los
+  carteles (`limit` / `save-first` / `limit-save` / `attached`) se dibujan con
+  `position: fixed` anclados al rect del botón: un `absolute` dentro de un contenedor con
+  `overflow-x-auto` queda **recortado** (CSS computa `overflow-y: auto`). Se manejan **sólo por
+  puntero**: aparecen al posar el cursor (o al tocar, para mobile), se cierran al salir, y un
+  `pointerdown`/`scroll` en `window` los descarta (sin timers, así no quedan pegados). Adjuntar
+  nunca navega: si falta guardar sólo destella "Guardar" (`animate-glow-pulse`, 3 s) y avisa;
+  un diseño ya adjuntado (misma firma) muestra "Este diseño ya está adjuntado" y no se resube.
+- **Selector de prenda**: el **carrusel es para mobile** (`lg:hidden`), no para el desktop. Va
+  en una fila con **scroll horizontal sin barra visible** (clase `.trama-strip`: `scrollbar-width:
+  none` + `::-webkit-scrollbar { display: none }`), snap, y **flechas `‹ ›`** translúcidas
+  (círculos `bg-brand-black/70 backdrop-blur`, `opacity-70`, hover cyan) que se **ocultan en cada
+  extremo** y sólo aparece si hay overflow (paso de 120 px = una tarjeta). En **desktop** queda la
+  grilla de 2 columnas **siempre como antes** (`hidden lg:grid`, orden original). El carrusel
+  muestra las prendas **en orden inverso** y arranca scrolleado a la **primera que sumó el
+  visitante** (`userAddedIds`, memoizado en `EditorSection` con `useMemo` para que el efecto no se
+  recue en cada render). Las métricas de las flechas salen de `onScroll` + `resize` +
+  `requestAnimationFrame` (callbacks: nunca setState sincróno en el body de un effect).
+- **Pitfall `min-w-0` (mobile)**: `EditorSection` apila los 3 paneles en un `grid` de **una sola
+  columna compartida** (`grid gap-4 lg:grid-cols-[250px_minmax(0,1fr)_260px]`). Un item sin
+  `min-w-0` hereda `min-width: auto` (min-content de su contenido): el strip del carrusel (fila
+  completa de tarjetas `shrink-0 w-28`) **ensanchaba la columna y toda la página** y, al no haber
+  overflow interno, `measure()` apagaba las flechas y el scroll. El `overflow-x-auto` del strip
+  **no** alcanza: el `min-w-0` va en el **item** del grid (paneles izquierdo y derecho; el del
+  canvas ya lo tenía). Síntoma típico: "no hay carrusel, las fotos se ven una al lado de la otra".
+- **Capas / miniaturas**: las capas `image` muestran la **miniatura** del logo en vez del tag
+  "IMG"/nombre (`name` no es editable; `alt={layer.name}` para accesibilidad). **Ojo: hay DOS
+  namespaces `trama:blob:`** — los logos del editor viven en IndexedDB local y se resuelven con
+  `resolveDrawableSrc` (`lib/storage.ts`, con cache de object URLs), que es lo que usa el canvas.
+  `MediaImage`/`useResolvedImage` resuelven con el driver de contenido: con Supabase activo
+  `resolveMediaSrc` devuelve el ref crudo → `<img src="trama:blob:...">` **rota**. Por eso el
+  editor usa `DrawableImage` (resuelve con `resolveDrawableSrc` y muestra placeholder si el blob
+  ya no existe, nunca una imagen rota). Al **cambiar de prenda** desde el selector, los logos
+  visibles se **ocultan** (no se borran: quedan en Capas con el ojo; los textos se mantienen) —
+  misma filosofía que "Vaciar". La nota del selector explica el comportamiento.
+- **Panel de Capas (interacción)**: la visibilidad es un botón de texto `OCULTAR` (visible) /
+  `AGREGAR` (oculta), no un ojo. Las propiedades ya **no** se muestran arriba de la lista: cada
+  fila tiene un **pincel** que abre un desplegable (`LayerPropertiesPopover`, `position: fixed`,
+  z-50, ancho `min(20rem, 100vw-16px)`, alto máx. 70vh con scroll interno). Sale **abajo** del
+  botón o **arriba** si no entra: se decide al abrir comparando espacios con el rect del botón,
+  sin medir alturas en effects (regla de `react-hooks` v7). Cierra con Escape, `pointerdown`
+  afuera, scroll de página y resize. Seleccionar una capa (nombre o pincel) la hace **visible**
+  automáticamente. `Supr`/`Backspace` **oculta** la capa seleccionada (ya no borra); borrar es
+  sólo con la `×`, que pide `window.confirm('¿Eliminar esta capa?')` (mismo patrón que el admin).
+  En mobile la fila va en **una sola línea** (`[miniatura] [nombre truncado] [pincel] [texto] [×]`)
+  con botones compactos (`text-[8px]` → `lg:text-[9px]`, `×` en `w-4`); _no_ usar `flex-wrap` en
+  dos líneas: desalineaba la miniatura con los botones y sumaba altura.
+- **Nombres y tope de capas**: las capas `image` muestran el **nombre del archivo subido** sin
+  extensión (`mi-logo.png` → `mi-logo`) en vez de sólo la miniatura; `addImageLayer` acepta
+  `name?` y cae en `"Logo"`. Los duplicados siguen agregando `" copia"`. Tope `MAX_LAYERS = 12`
+  exportado por `useEditor`: `addImageLayer`/`addTextLayer` devuelven `false` si ya hay 12, el
+  encabezado de Capas muestra `n/12` y lo resalta en `brand-cyan` al llegar, y `LogoUploader`
+  recibe `remaining`/`onLimitReached` (recorta archivos de un drop). El aviso bajo los botones
+  ("Llegaste al límite de 12 capas…") aparece sólo al intentar agregar de más; las capas
+  ocultas **también cuentan**. Los logos locales siguen **sin** viajar a Supabase.
+- **"Mis diseños" (`SavedDesigns`, extraído de `EditorSection`)**: las tarjetas tienen hover
+  cyan y la **cargada queda resaltada** (`aria-current`, borde/fondo cyan) aunque se edite; el
+  diseño activo vive en `EditorProducts` (`activeDesignId`) y **se suelta solo al cambiar de
+  prenda**, tanto desde el selector (`select`) como desde el catálogo (`addFromCatalog`); el
+  `selectById` que usa "cargar diseño" no lo limpia. No sobrevive a recargar. El nombre interno
+  es `namedFor: { productId, name }` (patrón de `zoomFor`): al cambiar de prenda vuelve a
+  `"Mi diseño"` y el autosave no arrastra el nombre anterior. **Al cargar un diseño se
+  mergean las capas** (`mergeLoadedLayers` en `lib/designLayers.ts`): las guardadas ganan y las
+  actuales que no están en el diseño quedan en Capas **ocultas** (sin duplicados, conservando
+  sus blobs), así Capas nunca pierde capas al restaurar. El input de nombre está
+  **oculto con `invisible`** (conserva el espacio) y sólo aparece en modo "Guardar como nuevo",
+  vacío, con foco y `ring` cyan. Botones: **`Guardar cambios`** actualiza el diseño cargado
+  (deshabilitado sin diseño activo y mientras el modo nuevo está abierto) y **`Guardar como
+  nuevo`** reemplaza a "Guardar versión": primer click entra al modo (fondo cyan en el botón,
+  `aria-pressed`) y el segundo guarda con nombre (`"Sin nombre"` si está vacío). Escape, click
+  fuera del bloque de acciones y Enter (confirmar) lo manejan; `autosave` sigue aparte y
+  `newName` no entra en la firma. Tope `MAX_SAVED_DESIGNS = 12` (en `storage.ts`): contador
+  `n/12` cyan al llegar y aviso rosa al intentar crear el 13.º (el botón sigue clickeable, como
+  en Capas). Borrar el activo limpia el resaltado y pide **`window.confirm('¿Eliminar este
+  diseño?')`** (mismo patrón que Capas). Al guardar, `SavedDesigns` muestra un **cartel fijo 3 s
+  arriba del botón** ("Cambios guardados" para "Guardar cambios", "Diseño guardado" para
+  "Guardar como nuevo"), calculado con el rect del botón (patrón de `EditorToolbar`), con
+  `role="status"` y descarte por scroll/pointerdown; el timer vive en un ref y se limpia al
+  desmontar. "Guardar cambios" tiene feedback al presionar (`active:scale-[0.97]` + tinte cyan) y
+  queda con borde/texto cyan mientras se ve el cartel. En mobile las acciones van en **una sola
+  fila** (`flex-nowrap` + `w-full`): botones con `text-[10px]`/`px-2` y el input `min-w-0 flex-1`
+  se achica para entrar; desde `sm` vuelven al tamaño y alineación de escritorio.
 
 ## Supabase
 
@@ -71,6 +153,18 @@ cambia, se reescribe acá. `AGENTS.md` tiene las reglas de trabajo y los comando
 
 - El formulario usa **Web3Forms** (sin backend; `VITE_CONTACT_ACCESS_KEY`, pública). El card
   de email es un `mailto:` (abre el cliente de correo; el "elegí una app" es del SO, no un bug).
+  Los diseños adjuntados viajan como **link firmado** en el cuerpo del mensaje; al enviar con
+  éxito se limpian (`clear()` del contexto, revoca las vistas previas).
+- **Botón flotante** (`FloatingAttachment`, montado en `Landing` junto a los providers):
+  aparece únicamente mientras haya diseños adjuntados. Es un **flecha SVG con el texto
+  adentro** (punta abajo "Enviar Diseño", punta arriba "Volver"; `fill` negro/65% +
+  borde cyan `stroke-brand-cyan`, hover se llena de cyan y el texto pasa a negro; `vectorEffect`
+  para que el borde no se deforme). Modo Enviar destella en loop con
+  `animate-glow-arc-loop` (**drop-shadow**, no `box-shadow`: el glow cuadrado no sigue la
+  silueta); Volver no destella. Scroll a `#contacto`/`#editor`; el modo se detecta con
+  `IntersectionObserver` sobre `#contacto` (`rootMargin: '-40% 0px -40% 0px'`), no con el click,
+  para que la etiqueta sea correcta aun scrolleando a mano. En tests jsdom el IO se stubbea a
+  mano (jsdom no lo implementa).
 
 ## Deploy
 

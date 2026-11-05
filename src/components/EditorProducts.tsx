@@ -31,6 +31,10 @@ type EditorProductsContextValue = {
   selectedId: string
   /** Cuántas prendas del catálogo trajo el visitante (no cuenta las del admin). */
   localCount: number
+  localProducts: ProductView[]
+  /** Diseño guardado que se está editando; se suelta al cambiar de prenda. */
+  activeDesignId: string | null
+  setActiveDesignId: (designId: string | null) => void
   select: (productId: string) => void
   /** Suma una foto del catálogo como prenda editable y la deja seleccionada. */
   addFromCatalog: (item: CatalogItem) => Promise<ProductView>
@@ -53,21 +57,29 @@ export function EditorProductsProvider({ children }: { children: ReactNode }) {
     const autosave = listDesigns().find((design) => design.id === 'autosave')
     return autosave && autosave.layers.length > 0 ? autosave.productId : ''
   })
+  const [activeDesignId, setActiveDesignId] = useState<string | null>(null)
 
   const products = useMemo(
     () => [...content.editor.products, ...localProducts],
     [content.editor.products, localProducts],
   )
 
-  const select = useCallback((productId: string) => setSelectedId(productId), [])
+  const select = useCallback(
+    (productId: string) => {
+      if (productId !== selectedId) setActiveDesignId(null)
+      setSelectedId(productId)
+    },
+    [selectedId],
+  )
 
-  const addFromCatalog = useCallback(
-    async (item: CatalogItem): Promise<ProductView> => {
+  const addProduct = useCallback(
+    async (item: CatalogItem, clearActive: boolean): Promise<ProductView> => {
       // Leemos lo persistido en vez de cerrar sobre el estado: dos altas encadenadas
       // no se pisan y la lista siempre respeta el tope.
       const stored = listLocalProducts().slice(-MAX_LOCAL_PRODUCTS)
       const existing = stored.find((product) => product.id === localIdFor(item.id))
       if (existing) {
+        if (clearActive && existing.id !== selectedId) setActiveDesignId(null)
         setSelectedId(existing.id)
         return existing
       }
@@ -90,10 +102,16 @@ export function EditorProductsProvider({ children }: { children: ReactNode }) {
       const next = [...stored, product].slice(-MAX_LOCAL_PRODUCTS)
       saveLocalProducts(next)
       setLocalProducts(next)
+      if (clearActive) setActiveDesignId(null)
       setSelectedId(product.id)
       return product
     },
-    [],
+    [selectedId],
+  )
+
+  const addFromCatalog = useCallback(
+    (item: CatalogItem) => addProduct(item, true),
+    [addProduct],
   )
 
   const selectById = useCallback(
@@ -110,14 +128,14 @@ export function EditorProductsProvider({ children }: { children: ReactNode }) {
       if (!item) return false
 
       try {
-        await addFromCatalog(item)
+        await addProduct(item, false)
         return true
       } catch (error) {
         console.error('No se pudo restaurar la prenda del diseño:', error)
         return false
       }
     },
-    [addFromCatalog, content.catalog.items, products],
+    [addProduct, content.catalog.items, products],
   )
 
   const value = useMemo(
@@ -125,11 +143,22 @@ export function EditorProductsProvider({ children }: { children: ReactNode }) {
       products,
       selectedId,
       localCount: localProducts.length,
+      localProducts,
+      activeDesignId,
+      setActiveDesignId,
       select,
       addFromCatalog,
       selectById,
     }),
-    [products, selectedId, localProducts.length, select, addFromCatalog, selectById],
+    [
+      products,
+      selectedId,
+      localProducts,
+      activeDesignId,
+      select,
+      addFromCatalog,
+      selectById,
+    ],
   )
 
   return <EditorProductsContext.Provider value={value}>{children}</EditorProductsContext.Provider>

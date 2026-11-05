@@ -4,6 +4,9 @@ import { useHistory } from './useHistory'
 
 const id = () => crypto.randomUUID()
 
+/** Tope de capas por diseño: mantiene legible el panel y el lienzo. */
+export const MAX_LAYERS = 12
+
 /** Un logo entra al 30% del ancho del producto, que es un tamaño cómodo para empezar. */
 const INITIAL_LOGO_WIDTH_RATIO = 0.3
 
@@ -22,7 +25,9 @@ export function useEditor(
   )
 
   const addImageLayer = useCallback(
-    (input: { src: string; naturalWidth: number; naturalHeight: number }) => {
+    (input: { src: string; naturalWidth: number; naturalHeight: number; name?: string }) => {
+      if (layers.length >= MAX_LAYERS) return false
+
       const maxWidth = productWidth * INITIAL_LOGO_WIDTH_RATIO
       const scale = Math.min(1, maxWidth / input.naturalWidth)
       const width = input.naturalWidth * scale
@@ -31,7 +36,7 @@ export function useEditor(
       const layer: ImageLayer = {
         id: id(),
         type: 'image',
-        name: 'Logo',
+        name: input.name?.trim() || 'Logo',
         x: (productWidth - width) / 2,
         y: (productHeight - height) / 2,
         width,
@@ -50,11 +55,14 @@ export function useEditor(
 
       commit((current) => [...current, layer])
       setSelectedId(layer.id)
+      return true
     },
-    [commit, productWidth, productHeight],
+    [commit, layers.length, productWidth, productHeight],
   )
 
   const addTextLayer = useCallback(() => {
+    if (layers.length >= MAX_LAYERS) return false
+
     const fontSize = Math.round(productWidth * 0.07)
     const layer: TextLayer = {
       id: id(),
@@ -80,7 +88,8 @@ export function useEditor(
 
     commit((current) => [...current, layer])
     setSelectedId(layer.id)
-  }, [commit, productWidth, productHeight])
+    return true
+  }, [commit, layers.length, productWidth, productHeight])
 
   const updateLayer = useCallback(
     (layerId: string, patch: Partial<Layer>) => {
@@ -155,10 +164,6 @@ export function useEditor(
     [reset],
   )
 
-  const deleteSelected = useCallback(() => {
-    if (selectedId) removeLayer(selectedId)
-  }, [removeLayer, selectedId])
-
   const duplicateSelected = useCallback(() => {
     if (selectedId) duplicateLayer(selectedId)
   }, [duplicateLayer, selectedId])
@@ -183,7 +188,6 @@ export function useEditor(
     reorderLayer,
     clearLayers,
     loadLayers,
-    deleteSelected,
     duplicateSelected,
     reorderSelected,
     undo,

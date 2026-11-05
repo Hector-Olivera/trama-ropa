@@ -5,7 +5,13 @@ import { ZOOM_MIN, clampZoom, computeCanvasMetrics } from '../../lib/canvasMetri
 import { renderDesignBlob } from '../../lib/exportImage'
 import { isSupabaseConfigured } from '../../lib/env'
 import { scrollToId } from '../../lib/scrollToId'
-import { deleteDesign, cleanupBlobs, listDesigns, saveDesign } from '../../lib/storage'
+import {
+  deleteDesign,
+  cleanupBlobs,
+  listDesigns,
+  saveDesign,
+  MAX_SAVED_DESIGNS,
+} from '../../lib/storage'
 import { useEditor, MAX_LAYERS } from '../../lib/useEditor'
 import { useElementSize } from '../../lib/useElementSize'
 import type { Layer, ProductView } from '../../types'
@@ -16,6 +22,7 @@ import { EditorToolbar } from './EditorToolbar'
 import { LayersPanel } from './LayersPanel'
 import { LogoUploader } from './LogoUploader'
 import { ProductPicker } from './ProductPicker'
+import { SavedDesigns } from './SavedDesigns'
 import { ZoomControl } from './ZoomControl'
 import { RichTitle } from '../RichTitle'
 
@@ -69,8 +76,18 @@ export function EditorSection() {
   const [highlightSaved, setHighlightSaved] = useState(false)
   const [productMissing, setProductMissing] = useState(false)
   const [layerLimitNotice, setLayerLimitNotice] = useState(false)
+  const [activeSavedId, setActiveSavedId] = useState<string | null>(null)
+  const [savingAsNew, setSavingAsNew] = useState(false)
+  const [newName, setNewName] = useState('')
+  const [designLimitNotice, setDesignLimitNotice] = useState(false)
   const layerCount = editor.layers.length
   const atLayerLimit = layerCount >= MAX_LAYERS
+  const versions = useMemo(
+    () => saved.filter((design) => design.id !== 'autosave'),
+    [saved],
+  )
+  const savedCount = versions.length
+  const canSaveChanges = activeSavedId !== null && !savingAsNew
 
   const signature = useMemo(
     () => signatureOf(productId, designName, editor.layers, zoom),
@@ -247,10 +264,49 @@ export function EditorSection() {
     scrollToId('mis-disenos')
   }, [])
 
-  const handleSaveVersion = () => {
+  const handleSaveChanges = useCallback(() => {
+    if (!activeSavedId || savingAsNew) return
+    const design = saved.find((item) => item.id === activeSavedId)
+    if (!design) {
+      setActiveSavedId(null)
+      return
+    }
     saveDesign({
-      id: crypto.randomUUID(),
-      name: designName.trim() || 'Sin nombre',
+      ...design,
+      name: designName,
+      productId,
+      layers: editor.layers,
+      zoom,
+    })
+    setSaved(listDesigns())
+    setDesignLimitNotice(false)
+  }, [
+    activeSavedId,
+    savingAsNew,
+    saved,
+    designName,
+    productId,
+    editor.layers,
+    zoom,
+  ])
+
+  const handleSaveAsNew = useCallback(() => {
+    if (!savingAsNew) {
+      if (versions.length >= MAX_SAVED_DESIGNS) {
+        setDesignLimitNotice(true)
+        return
+      }
+      setDesignLimitNotice(false)
+      setNewName('')
+      setSavingAsNew(true)
+      return
+    }
+
+    const nextName = newName.trim() || 'Sin nombre'
+    const id = crypto.randomUUID()
+    saveDesign({
+      id,
+      name: nextName,
       productId,
       layers: editor.layers,
       zoom,
@@ -258,12 +314,26 @@ export function EditorSection() {
       updatedAt: Date.now(),
     })
     setSaved(listDesigns())
+    setActiveSavedId(id)
+    setDesignName(nextName)
+    setNewName('')
+    setSavingAsNew(false)
     setHighlightSaved(false)
-  }
+    setDesignLimitNotice(false)
+  }, [savingAsNew, versions.length, newName, productId, editor.layers, zoom])
+
+  const handleCancelNew = useCallback(() => {
+    setSavingAsNew(false)
+    setNewName('')
+  }, [])
 
   const handleLoad = (id: string) => {
     const design = saved.find((item) => item.id === id)
     if (!design) return
+    setActiveSavedId(id)
+    setSavingAsNew(false)
+    setNewName('')
+    setDesignLimitNotice(false)
     setDesignName(design.name)
     editor.loadLayers(design.layers)
     setZoomFor({ productId: design.productId, value: clampZoom(design.zoom ?? 1) })
@@ -287,10 +357,10 @@ export function EditorSection() {
   const handleDelete = (id: string) => {
     deleteDesign(id)
     setSaved(listDesigns())
+    setDesignLimitNotice(false)
+    if (id === activeSavedId) setActiveSavedId(null)
     void cleanupBlobs()
   }
-
-  const versions = saved.filter((design) => design.id !== 'autosave')
 
   return (
     <section id="editor" className="relative scroll-mt-20 border-t border-brand-line py-10 md:py-16">
@@ -447,8 +517,17 @@ export function EditorSection() {
               name={designName}
               saveState={saveState}
               highlight={highlightSaved}
-              onNameChange={setDesignName}
-              onSave={handleSaveVersion}
+              activeId={activeSavedId}
+              savingAsNew={savingAsNew}
+              newName={newName}
+              savedCount={savedCount}
+              maxSaved={MAX_SAVED_DESIGNS}
+              limitNotice={designLimitNotice}
+              canSaveChanges={canSaveChanges}
+              onNewNameChange={setNewName}
+              onSaveChanges={handleSaveChanges}
+              onSaveAsNew={handleSaveAsNew}
+              onCancelNew={handleCancelNew}
               onLoad={handleLoad}
               onDelete={handleDelete}
             />
@@ -456,103 +535,5 @@ export function EditorSection() {
         )}
       </div>
     </section>
-  )
-}
-
-type SavedProps = {
-  versions: ReturnType<typeof listDesigns>
-  name: string
-  saveState: 'idle' | 'saving' | 'saved'
-  highlight: boolean
-  onNameChange: (value: string) => void
-  onSave: () => void
-  onLoad: (id: string) => void
-  onDelete: (id: string) => void
-}
-
-function SavedDesigns({
-  versions,
-  name,
-  saveState,
-  highlight,
-  onNameChange,
-  onSave,
-  onLoad,
-  onDelete,
-}: SavedProps) {
-  return (
-    <div
-      id="mis-disenos"
-      className={`mt-8 scroll-mt-20 rounded-lg border p-4 transition ${
-        highlight
-          ? 'border-brand-cyan bg-brand-cyan/5 ring-2 ring-brand-cyan/70'
-          : 'border-brand-line bg-brand-surface'
-      }`}
-    >
-      <div className="flex flex-wrap items-center gap-2">
-        <h3 className="text-[11px] font-bold uppercase tracking-widest text-brand-muted">
-          Mis diseños
-        </h3>
-        <span aria-live="polite" className="text-[11px] text-brand-muted">
-          {saveState === 'saving' && 'Guardando...'}
-          {saveState === 'saved' && '✓ Guardado en este dispositivo'}
-        </span>
-
-        <div className="ml-auto flex flex-wrap items-center gap-2">
-          <input
-            value={name}
-            onChange={(event) => onNameChange(event.target.value)}
-            aria-label="Nombre del diseño"
-            className="rounded border border-brand-line bg-brand-black px-2.5 py-1.5 text-xs text-brand-light outline-none focus:border-brand-cyan"
-          />
-          <button
-            type="button"
-            onClick={onSave}
-            className="rounded border border-brand-line px-3 py-1.5 text-xs font-semibold text-brand-light transition hover:border-brand-cyan hover:text-brand-cyan"
-          >
-            Guardar versión
-          </button>
-        </div>
-      </div>
-
-      {versions.length === 0 ? (
-        <p className="mt-3 text-[11px] text-brand-muted">
-          No hay versiones guardadas. Tu trabajo actual se guarda solo; usá "Guardar versión"
-          para conservar una copia con nombre.
-        </p>
-      ) : (
-        <ul className="mt-3 grid grid-cols-2 gap-1.5 lg:grid-cols-4 lg:gap-2">
-          {versions.map((design) => (
-            <li
-              key={design.id}
-              className="flex items-center gap-1.5 rounded border border-brand-line bg-brand-black/40 px-2 py-1.5 lg:gap-2 lg:px-2.5 lg:py-2"
-            >
-              <button
-                type="button"
-                onClick={() => onLoad(design.id)}
-                className="min-w-0 flex-1 text-left"
-              >
-                <span className="block truncate text-[11px] font-semibold text-brand-light lg:text-xs">
-                  {design.name}
-                </span>
-                <span className="block text-[9px] text-brand-muted lg:text-[10px]">
-                  {new Date(design.updatedAt).toLocaleDateString('es-AR')} ·{' '}
-                  {design.layers.length}{' '}
-                  {design.layers.length === 1 ? 'capa' : 'capas'}
-                </span>
-              </button>
-              <button
-                type="button"
-                onClick={() => onDelete(design.id)}
-                aria-label={`Borrar ${design.name}`}
-                className="w-5 rounded text-center text-brand-muted transition hover:bg-brand-pink/20 hover:text-brand-pink"
-              >
-                ×
-              </button>
-            </li>
-          ))}
-        </ul>
-      )}
-    </div>
   )
 }

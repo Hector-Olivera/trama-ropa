@@ -108,6 +108,18 @@ cambia, se reescribe acá. `AGENTS.md` tiene las reglas de trabajo y los comando
   recibe `remaining`/`onLimitReached` (recorta archivos de un drop). El aviso bajo los botones
   ("Llegaste al límite de 12 capas…") aparece sólo al intentar agregar de más; las capas
   ocultas **también cuentan**. Los logos locales siguen **sin** viajar a Supabase.
+- **"Mis diseños" (`SavedDesigns`, extraído de `EditorSection`)**: las tarjetas tienen hover
+  cyan y la **cargada queda resaltada** (`aria-current`, borde/fondo cyan) aunque se edite; el
+  resaltado es del `activeSavedId` en memoria (no sobrevive a recargar). El input de nombre está
+  **oculto con `invisible`** (conserva el espacio) y sólo aparece en modo "Guardar como nuevo",
+  vacío, con foco y `ring` cyan. Botones: **`Guardar cambios`** actualiza el diseño cargado
+  (deshabilitado sin diseño activo y mientras el modo nuevo está abierto) y **`Guardar como
+  nuevo`** reemplaza a "Guardar versión": primer click entra al modo (fondo cyan en el botón,
+  `aria-pressed`) y el segundo guarda con nombre (`"Sin nombre"` si está vacío). Escape, click
+  fuera del bloque de acciones y Enter (confirmar) lo manejan; `autosave` sigue aparte y
+  `newName` no entra en la firma. Tope `MAX_SAVED_DESIGNS = 12` (en `storage.ts`): contador
+  `n/12` cyan al llegar y aviso rosa al intentar crear el 13.º (el botón sigue clickeable, como
+  en Capas). Borrar el activo limpia el resaltado.
 
 ## Supabase
 

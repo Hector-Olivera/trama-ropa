@@ -17,6 +17,8 @@ import { BLOB_PREFIX, STORAGE_KEYS } from './storage-keys'
 
 const DESIGNS_KEY = STORAGE_KEYS.designs
 
+export const MAX_SAVED_DESIGNS = 12
+
 export { isBlobRef }
 
 function readDesigns(): Design[] {

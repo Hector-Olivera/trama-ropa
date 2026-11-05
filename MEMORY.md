@@ -110,7 +110,14 @@ cambia, se reescribe acá. `AGENTS.md` tiene las reglas de trabajo y los comando
   ocultas **también cuentan**. Los logos locales siguen **sin** viajar a Supabase.
 - **"Mis diseños" (`SavedDesigns`, extraído de `EditorSection`)**: las tarjetas tienen hover
   cyan y la **cargada queda resaltada** (`aria-current`, borde/fondo cyan) aunque se edite; el
-  resaltado es del `activeSavedId` en memoria (no sobrevive a recargar). El input de nombre está
+  diseño activo vive en `EditorProducts` (`activeDesignId`) y **se suelta solo al cambiar de
+  prenda**, tanto desde el selector (`select`) como desde el catálogo (`addFromCatalog`); el
+  `selectById` que usa "cargar diseño" no lo limpia. No sobrevive a recargar. El nombre interno
+  es `namedFor: { productId, name }` (patrón de `zoomFor`): al cambiar de prenda vuelve a
+  `"Mi diseño"` y el autosave no arrastra el nombre anterior. **Al cargar un diseño se
+  mergean las capas** (`mergeLoadedLayers` en `lib/designLayers.ts`): las guardadas ganan y las
+  actuales que no están en el diseño quedan en Capas **ocultas** (sin duplicados, conservando
+  sus blobs), así Capas nunca pierde capas al restaurar. El input de nombre está
   **oculto con `invisible`** (conserva el espacio) y sólo aparece en modo "Guardar como nuevo",
   vacío, con foco y `ring` cyan. Botones: **`Guardar cambios`** actualiza el diseño cargado
   (deshabilitado sin diseño activo y mientras el modo nuevo está abierto) y **`Guardar como

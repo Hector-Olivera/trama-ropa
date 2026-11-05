@@ -5,6 +5,7 @@ import { ZOOM_MIN, clampZoom, computeCanvasMetrics } from '../../lib/canvasMetri
 import { renderDesignBlob } from '../../lib/exportImage'
 import { isSupabaseConfigured } from '../../lib/env'
 import { scrollToId } from '../../lib/scrollToId'
+import { mergeLoadedLayers } from '../../lib/designLayers'
 import {
   deleteDesign,
   cleanupBlobs,
@@ -42,8 +43,16 @@ const isTypingTarget = (target: EventTarget | null): boolean =>
 
 export function EditorSection() {
   const { content } = useContent()
-  const { products, selectedId: productId, select, localCount, selectById, localProducts } =
-    useEditorProducts()
+  const {
+    products,
+    selectedId: productId,
+    select,
+    localCount,
+    selectById,
+    localProducts,
+    activeDesignId,
+    setActiveDesignId,
+  } = useEditorProducts()
   const attachment = useDesignAttachment()
   const userAddedIds = useMemo(() => localProducts.map((item) => item.id), [localProducts])
 
@@ -63,7 +72,11 @@ export function EditorSection() {
   const stageRef = useRef<Konva.Stage>(null)
   const [shellRef, shellSize] = useElementSize<HTMLDivElement>()
   const [editingId, setEditingId] = useState<string | null>(null)
-  const [designName, setDesignName] = useState(boot?.name ?? 'Mi diseño')
+  const [namedFor, setNamedFor] = useState(() => ({
+    productId,
+    name: boot?.name ?? 'Mi diseño',
+  }))
+  const designName = namedFor.productId === productId ? namedFor.name : 'Mi diseño'
   // El zoom pertenece a la prenda que se está viendo: si cambia la prenda,
   // vuelve al tamaño original sin que haya que resetearlo a mano en cada camino
   // (selector, "Llevar al editor" del catálogo o restaurar una versión).
@@ -76,7 +89,6 @@ export function EditorSection() {
   const [highlightSaved, setHighlightSaved] = useState(false)
   const [productMissing, setProductMissing] = useState(false)
   const [layerLimitNotice, setLayerLimitNotice] = useState(false)
-  const [activeSavedId, setActiveSavedId] = useState<string | null>(null)
   const [savingAsNew, setSavingAsNew] = useState(false)
   const [newName, setNewName] = useState('')
   const [designLimitNotice, setDesignLimitNotice] = useState(false)
@@ -87,7 +99,7 @@ export function EditorSection() {
     [saved],
   )
   const savedCount = versions.length
-  const canSaveChanges = activeSavedId !== null && !savingAsNew
+  const canSaveChanges = activeDesignId !== null && !savingAsNew
 
   const signature = useMemo(
     () => signatureOf(productId, designName, editor.layers, zoom),
@@ -265,10 +277,10 @@ export function EditorSection() {
   }, [])
 
   const handleSaveChanges = useCallback(() => {
-    if (!activeSavedId || savingAsNew) return
-    const design = saved.find((item) => item.id === activeSavedId)
+    if (!activeDesignId || savingAsNew) return
+    const design = saved.find((item) => item.id === activeDesignId)
     if (!design) {
-      setActiveSavedId(null)
+      setActiveDesignId(null)
       return
     }
     saveDesign({
@@ -281,13 +293,14 @@ export function EditorSection() {
     setSaved(listDesigns())
     setDesignLimitNotice(false)
   }, [
-    activeSavedId,
+    activeDesignId,
     savingAsNew,
     saved,
     designName,
     productId,
     editor.layers,
     zoom,
+    setActiveDesignId,
   ])
 
   const handleSaveAsNew = useCallback(() => {
@@ -314,13 +327,21 @@ export function EditorSection() {
       updatedAt: Date.now(),
     })
     setSaved(listDesigns())
-    setActiveSavedId(id)
-    setDesignName(nextName)
+    setActiveDesignId(id)
+    setNamedFor({ productId, name: nextName })
     setNewName('')
     setSavingAsNew(false)
     setHighlightSaved(false)
     setDesignLimitNotice(false)
-  }, [savingAsNew, versions.length, newName, productId, editor.layers, zoom])
+  }, [
+    savingAsNew,
+    versions.length,
+    newName,
+    productId,
+    editor.layers,
+    zoom,
+    setActiveDesignId,
+  ])
 
   const handleCancelNew = useCallback(() => {
     setSavingAsNew(false)
@@ -330,12 +351,12 @@ export function EditorSection() {
   const handleLoad = (id: string) => {
     const design = saved.find((item) => item.id === id)
     if (!design) return
-    setActiveSavedId(id)
+    setActiveDesignId(id)
     setSavingAsNew(false)
     setNewName('')
     setDesignLimitNotice(false)
-    setDesignName(design.name)
-    editor.loadLayers(design.layers)
+    setNamedFor({ productId: design.productId, name: design.name })
+    editor.loadLayers(mergeLoadedLayers(editor.layers, design.layers))
     setZoomFor({ productId: design.productId, value: clampZoom(design.zoom ?? 1) })
     setProductMissing(false)
     void selectById(design.productId).then((found) => {
@@ -358,7 +379,7 @@ export function EditorSection() {
     deleteDesign(id)
     setSaved(listDesigns())
     setDesignLimitNotice(false)
-    if (id === activeSavedId) setActiveSavedId(null)
+    if (id === activeDesignId) setActiveDesignId(null)
     void cleanupBlobs()
   }
 
@@ -517,7 +538,7 @@ export function EditorSection() {
               name={designName}
               saveState={saveState}
               highlight={highlightSaved}
-              activeId={activeSavedId}
+              activeId={activeDesignId}
               savingAsNew={savingAsNew}
               newName={newName}
               savedCount={savedCount}

@@ -28,7 +28,16 @@ afterEach(() => {
 
 function Probe() {
   const { content } = useContent()
-  const { products, selectedId, localCount, addFromCatalog, selectById } = useEditorProducts()
+  const {
+    products,
+    selectedId,
+    localCount,
+    addFromCatalog,
+    selectById,
+    select,
+    activeDesignId,
+    setActiveDesignId,
+  } = useEditorProducts()
   const [result, setResult] = useState('')
 
   const restore = async (productId: string) => {
@@ -41,6 +50,15 @@ function Probe() {
       <span data-testid="selected">{selectedId}</span>
       <span data-testid="local-count">{localCount}</span>
       <span data-testid="result">{result}</span>
+      <span data-testid="active">{activeDesignId ?? ''}</span>
+      <button type="button" onClick={() => setActiveDesignId('d1')}>
+        Activar diseño
+      </button>
+      {products.map((product) => (
+        <button key={`pick-${product.id}`} type="button" onClick={() => select(product.id)}>
+          Elegir {product.id}
+        </button>
+      ))}
       {content.catalog.items.map((item) => (
         <button key={item.id} type="button" onClick={() => void addFromCatalog(item)}>
           Agregar {item.id}
@@ -182,5 +200,53 @@ describe('EditorProducts', () => {
 
     await waitFor(() => expect(screen.getByTestId('result').textContent).toBe('false'))
     expect(screen.getByTestId('local-count').textContent).toBe('0')
+  })
+
+  it('suelta el diseño activo al elegir otra prenda', async () => {
+    renderProvider()
+    await screen.findByRole('button', { name: 'Agregar calza-oxford-01' })
+    const adminId = screen.getByTestId('ids').textContent?.split(',')[0] ?? ''
+
+    fireEvent.click(screen.getByRole('button', { name: 'Activar diseño' }))
+    expect(screen.getByTestId('active').textContent).toBe('d1')
+
+    fireEvent.click(screen.getByRole('button', { name: `Elegir ${adminId}` }))
+
+    await waitFor(() => expect(screen.getByTestId('selected').textContent).toBe(adminId))
+    expect(screen.getByTestId('active').textContent).toBe('')
+  })
+
+  it('conserva el diseño activo si se elige la misma prenda', async () => {
+    renderProvider()
+    await screen.findByRole('button', { name: 'Agregar calza-oxford-01' })
+    const adminId = screen.getByTestId('ids').textContent?.split(',')[0] ?? ''
+    fireEvent.click(screen.getByRole('button', { name: `Elegir ${adminId}` }))
+    await waitFor(() => expect(screen.getByTestId('selected').textContent).toBe(adminId))
+
+    fireEvent.click(screen.getByRole('button', { name: 'Activar diseño' }))
+    fireEvent.click(screen.getByRole('button', { name: `Elegir ${adminId}` }))
+
+    expect(screen.getByTestId('active').textContent).toBe('d1')
+  })
+
+  it('suelta el diseño activo al traer una prenda del catálogo', async () => {
+    renderProvider()
+    await screen.findByRole('button', { name: 'Agregar calza-oxford-01' })
+
+    fireEvent.click(screen.getByRole('button', { name: 'Activar diseño' }))
+    await addItem('calza-oxford-01')
+
+    await waitFor(() => expect(screen.getByTestId('active').textContent).toBe(''))
+  })
+
+  it('conserva el diseño activo al restaurar la prenda de un diseño', async () => {
+    renderProvider()
+    await fillCatalog()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Activar diseño' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Restaurar calza-oxford-01' }))
+
+    await waitFor(() => expect(screen.getByTestId('result').textContent).toBe('true'))
+    expect(screen.getByTestId('active').textContent).toBe('d1')
   })
 })

@@ -84,7 +84,7 @@ src/
                RichTitle, editor/*
   lib/       storage.ts, blobReferences.ts, env.ts, supabase.ts, useEditor.ts,
              useHistory.ts, useElementSize.ts, exportImage.ts, images.ts,
-             imageFilters.ts
+             canvasMetrics.ts, imageFilters.ts
   data/      products.ts (DEFAULT_PRODUCTS)
   types.ts   tipos del editor (Layer, Design, ProductView)
 ```
@@ -113,6 +113,9 @@ Los componentes del dashboard y la landing no deberían enterarse del backend.
   URL). `MediaRef` es un path de `public/` o una clave de blob. Toda `<img>` de
   contenido pasa por `MediaImage`.
 - `useResolvedImage` resuelve blobs de forma asíncrona; no mezclar con src síncrono.
+- **Zoom**: es sólo de vista (no cambia el export). Se hace agrandando el `Stage`
+  (`src/lib/canvasMetrics.ts`) dentro de un contenedor `overflow-auto`; **nunca** con
+  `transform` CSS sobre el canvas (rompe el hit-testing de Konva y el recorte del export).
 - **Blobs**: los binarios viven en IndexedDB y las refs son `trama:blob:<id>`. El GC
   (`cleanupBlobs()` en `src/lib/storage.ts`) borra lo que no referencian el contenido ni
   los diseños **persistidos**. Llamalo sólo con el estado ya guardado (ej. tras un commit),

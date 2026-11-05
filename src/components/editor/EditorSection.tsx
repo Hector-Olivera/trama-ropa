@@ -1,28 +1,41 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type Konva from 'konva'
 import { useContent } from '../../content/ContentProvider'
-import { exportDesign, renderDesignBlob } from '../../lib/exportImage'
+import { ZOOM_MIN, clampZoom, computeCanvasMetrics } from '../../lib/canvasMetrics'
+import { renderDesignBlob } from '../../lib/exportImage'
 import { isSupabaseConfigured } from '../../lib/env'
 import { scrollToId } from '../../lib/scrollToId'
-import { deleteDesign, cleanupBlobs, listDesigns, saveDesign } from '../../lib/storage'
-import { useEditor } from '../../lib/useEditor'
+import { mergeLoadedLayers } from '../../lib/designLayers'
+import {
+  deleteDesign,
+  cleanupBlobs,
+  listDesigns,
+  saveDesign,
+  MAX_SAVED_DESIGNS,
+} from '../../lib/storage'
+import { useEditor, MAX_LAYERS } from '../../lib/useEditor'
 import { useElementSize } from '../../lib/useElementSize'
-import type { ExportFormat, ExportScale, Layer, ProductView } from '../../types'
+import type { Layer, ProductView } from '../../types'
 import { useDesignAttachment } from '../DesignAttachment'
 import { useEditorProducts } from '../EditorProducts'
-import { EditorCanvas, type CanvasMetrics } from './EditorCanvas'
+import { EditorCanvas } from './EditorCanvas'
 import { EditorToolbar } from './EditorToolbar'
 import { LayersPanel } from './LayersPanel'
 import { LogoUploader } from './LogoUploader'
 import { ProductPicker } from './ProductPicker'
-import { PropertiesPanel } from './PropertiesPanel'
+import { SavedDesigns } from './SavedDesigns'
+import { ZoomControl } from './ZoomControl'
 import { RichTitle } from '../RichTitle'
 
 const CANVAS_HEIGHT = 640
 
 /** Firma del contenido guardable. El estado de guardado se deriva de compararla. */
-const signatureOf = (productId: string, name: string, layers: Layer[]): string =>
-  JSON.stringify({ productId, name, layers })
+const signatureOf = (
+  productId: string,
+  name: string,
+  layers: Layer[],
+  zoom: number,
+): string => JSON.stringify({ productId, name, layers, zoom })
 
 const isTypingTarget = (target: EventTarget | null): boolean =>
   target instanceof HTMLElement &&
@@ -30,8 +43,18 @@ const isTypingTarget = (target: EventTarget | null): boolean =>
 
 export function EditorSection() {
   const { content } = useContent()
-  const { products, selectedId: productId, select } = useEditorProducts()
+  const {
+    products,
+    selectedId: productId,
+    select,
+    localCount,
+    selectById,
+    localProducts,
+    activeDesignId,
+    setActiveDesignId,
+  } = useEditorProducts()
   const attachment = useDesignAttachment()
+  const userAddedIds = useMemo(() => localProducts.map((item) => item.id), [localProducts])
 
   // El autosave se lee una sola vez y siembra el estado inicial. Hacerlo en un
   // effect seria un setState en render, que la regla react-hooks v7 marca.
@@ -49,41 +72,82 @@ export function EditorSection() {
   const stageRef = useRef<Konva.Stage>(null)
   const [shellRef, shellSize] = useElementSize<HTMLDivElement>()
   const [editingId, setEditingId] = useState<string | null>(null)
-  const [exporting, setExporting] = useState(false)
-  const [designName, setDesignName] = useState(boot?.name ?? 'Mi diseño')
+  const [namedFor, setNamedFor] = useState(() => ({
+    productId,
+    name: boot?.name ?? 'Mi diseño',
+  }))
+  const designName = namedFor.productId === productId ? namedFor.name : 'Mi diseño'
+  // El zoom pertenece a la prenda que se está viendo: si cambia la prenda,
+  // vuelve al tamaño original sin que haya que resetearlo a mano en cada camino
+  // (selector, "Llevar al editor" del catálogo o restaurar una versión).
+  const [zoomFor, setZoomFor] = useState(() => ({
+    productId,
+    value: clampZoom(boot?.zoom ?? 1),
+  }))
+  const zoom = zoomFor.productId === productId ? zoomFor.value : ZOOM_MIN
   const [saved, setSaved] = useState(() => listDesigns())
   const [highlightSaved, setHighlightSaved] = useState(false)
+  const [productMissing, setProductMissing] = useState(false)
+  const [layerLimitNotice, setLayerLimitNotice] = useState(false)
+  const [savingAsNew, setSavingAsNew] = useState(false)
+  const [newName, setNewName] = useState('')
+  const [designLimitNotice, setDesignLimitNotice] = useState(false)
+  const layerCount = editor.layers.length
+  const atLayerLimit = layerCount >= MAX_LAYERS
+  const versions = useMemo(
+    () => saved.filter((design) => design.id !== 'autosave'),
+    [saved],
+  )
+  const savedCount = versions.length
+  const canSaveChanges = activeDesignId !== null && !savingAsNew
 
   const signature = useMemo(
-    () => signatureOf(productId, designName, editor.layers),
-    [productId, designName, editor.layers],
+    () => signatureOf(productId, designName, editor.layers, zoom),
+    [productId, designName, editor.layers, zoom],
   )
   const [savedSignature, setSavedSignature] = useState(() =>
-    boot ? signatureOf(boot.productId, boot.name, boot.layers) : '',
+    boot ? signatureOf(boot.productId, boot.name, boot.layers, clampZoom(boot.zoom ?? 1)) : '',
   )
   // Derivado, no guardado: asi no hace falta setState dentro del effect de autosave.
   const saveState: 'idle' | 'saving' | 'saved' =
     editor.layers.length === 0 ? 'idle' : signature === savedSignature ? 'saved' : 'saving'
 
-  const metrics: CanvasMetrics = useMemo(() => {
-    const width = Math.max(shellSize.width, 1)
-    const height = CANVAS_HEIGHT
-    const productWidth = product?.width ?? 1
-    const productHeight = product?.height ?? 1
-    const scale = Math.min(width / productWidth, height / productHeight)
-    return {
-      stageWidth: width,
-      stageHeight: height,
-      scale,
-      offsetX: (width - productWidth * scale) / 2,
-      offsetY: (height - productHeight * scale) / 2,
-    }
-  }, [shellSize.width, product?.width, product?.height])
+  const metrics = useMemo(
+    () =>
+      computeCanvasMetrics(
+        { width: product?.width ?? 1, height: product?.height ?? 1 },
+        { width: shellSize.width, height: CANVAS_HEIGHT },
+        zoom,
+      ),
+    [shellSize.width, product?.width, product?.height, zoom],
+  )
 
   const handleCommit = useCallback(
     (layerId: string, patch: Partial<Layer>) => editor.updateLayer(layerId, patch),
     [editor],
   )
+
+  const handleSelectLayer = useCallback(
+    (layerId: string) => {
+      const layer = editor.layers.find((item) => item.id === layerId)
+      if (layer && !layer.visible) handleCommit(layerId, { visible: true })
+      editor.setSelectedId(layerId)
+    },
+    [editor, handleCommit],
+  )
+
+  const handleZoom = useCallback(
+    (value: number) => setZoomFor({ productId, value: clampZoom(value) }),
+    [productId],
+  )
+
+  // El lienzo crece con el zoom: al cambiarlo centramos la vista en la prenda.
+  useEffect(() => {
+    const viewport = shellRef.current
+    if (!viewport) return
+    viewport.scrollLeft = Math.max(0, (viewport.scrollWidth - viewport.clientWidth) / 2)
+    viewport.scrollTop = Math.max(0, (viewport.scrollHeight - viewport.clientHeight) / 2)
+  }, [zoom, shellRef])
 
   // --- Autosave: una vez que el usuario deja de tocar, guardamos. ---
   useEffect(() => {
@@ -95,6 +159,7 @@ export function EditorSection() {
         name: designName,
         productId,
         layers: editor.layers,
+        zoom,
         createdAt: now,
         updatedAt: now,
       })
@@ -103,7 +168,7 @@ export function EditorSection() {
     }, 900)
 
     return () => clearTimeout(timer)
-  }, [signature, designName, productId, editor.layers])
+  }, [signature, designName, productId, editor.layers, zoom])
 
   // --- Atajos de teclado ---
   useEffect(() => {
@@ -132,7 +197,7 @@ export function EditorSection() {
       if (event.key === 'Delete' || event.key === 'Backspace') {
         if (!editor.selectedId) return
         event.preventDefault()
-        editor.deleteSelected()
+        handleCommit(editor.selectedId, { visible: false })
         return
       }
 
@@ -159,15 +224,38 @@ export function EditorSection() {
 
     window.addEventListener('keydown', onKeyDown)
     return () => window.removeEventListener('keydown', onKeyDown)
-  }, [editor])
+  }, [editor, handleCommit])
 
-  const handleExport = useCallback(
-    async ({ scale, format }: { scale: ExportScale; format: ExportFormat }) => {
-      const stage = stageRef.current
-      if (!stage || !product) return
-      setExporting(true)
-      try {
-        await exportDesign(
+  const designSnapshot = useMemo(
+    () => JSON.stringify({ productId, zoom, layers: editor.layers }),
+    [editor.layers, productId, zoom],
+  )
+
+  const isCurrentSaved = useMemo(
+    () =>
+      saved.some(
+        (item) =>
+          item.id !== 'autosave' &&
+          JSON.stringify({
+            productId: item.productId,
+            zoom: item.zoom ?? 1,
+            layers: item.layers,
+          }) === designSnapshot,
+      ),
+    [designSnapshot, saved],
+  )
+
+  const isAlreadyAttached = useMemo(
+    () => attachment.attachments.some((item) => item.signature === designSnapshot),
+    [attachment.attachments, designSnapshot],
+  )
+
+  const handleAttach = useCallback(() => {
+    const stage = stageRef.current
+    if (!stage || !product) return
+    void attachment.attach(
+      async () => {
+        const { blob } = await renderDesignBlob(
           stage,
           {
             displayScale: metrics.scale,
@@ -175,76 +263,128 @@ export function EditorSection() {
             offsetY: metrics.offsetY,
           },
           product,
-          {
-            scale,
-            format,
-            fileName: designName.replace(/[^\w-]+/g, '-').toLowerCase() || 'trama',
-          },
+          { scale: 3, format: 'png' },
         )
-      } catch (error) {
-        console.error(error)
-        alert('No se pudo exportar. Probá de nuevo o usá otro formato.')
-      } finally {
-        setExporting(false)
-      }
-    },
-    [designName, metrics, product],
-  )
+        return blob
+      },
+      designSnapshot,
+    )
+  }, [attachment, designSnapshot, metrics, product])
 
-  const handleAttach = useCallback(() => {
-    const stage = stageRef.current
-    if (!stage || !product) return
-    void attachment.attach(async () => {
-      const { blob } = await renderDesignBlob(
-        stage,
-        {
-          displayScale: metrics.scale,
-          offsetX: metrics.offsetX,
-          offsetY: metrics.offsetY,
-        },
-        product,
-        { scale: 1, format: 'png' },
-      )
-      return blob
-    })
-  }, [attachment, metrics, product])
-
-  const handleSaveJump = () => {
+  const handleSaveJump = useCallback(() => {
     setHighlightSaved(true)
     scrollToId('mis-disenos')
-  }
+  }, [])
 
-  const handleSaveVersion = () => {
+  const handleSaveChanges = useCallback(() => {
+    if (!activeDesignId || savingAsNew) return
+    const design = saved.find((item) => item.id === activeDesignId)
+    if (!design) {
+      setActiveDesignId(null)
+      return
+    }
     saveDesign({
-      id: crypto.randomUUID(),
-      name: designName.trim() || 'Sin nombre',
+      ...design,
+      name: designName,
       productId,
       layers: editor.layers,
+      zoom,
+    })
+    setSaved(listDesigns())
+    setDesignLimitNotice(false)
+  }, [
+    activeDesignId,
+    savingAsNew,
+    saved,
+    designName,
+    productId,
+    editor.layers,
+    zoom,
+    setActiveDesignId,
+  ])
+
+  const handleSaveAsNew = useCallback(() => {
+    if (!savingAsNew) {
+      if (versions.length >= MAX_SAVED_DESIGNS) {
+        setDesignLimitNotice(true)
+        return
+      }
+      setDesignLimitNotice(false)
+      setNewName('')
+      setSavingAsNew(true)
+      return
+    }
+
+    const nextName = newName.trim() || 'Sin nombre'
+    const id = crypto.randomUUID()
+    saveDesign({
+      id,
+      name: nextName,
+      productId,
+      layers: editor.layers,
+      zoom,
       createdAt: Date.now(),
       updatedAt: Date.now(),
     })
     setSaved(listDesigns())
+    setActiveDesignId(id)
+    setNamedFor({ productId, name: nextName })
+    setNewName('')
+    setSavingAsNew(false)
     setHighlightSaved(false)
-  }
+    setDesignLimitNotice(false)
+  }, [
+    savingAsNew,
+    versions.length,
+    newName,
+    productId,
+    editor.layers,
+    zoom,
+    setActiveDesignId,
+  ])
+
+  const handleCancelNew = useCallback(() => {
+    setSavingAsNew(false)
+    setNewName('')
+  }, [])
 
   const handleLoad = (id: string) => {
     const design = saved.find((item) => item.id === id)
     if (!design) return
-    select(design.productId)
-    setDesignName(design.name)
-    editor.loadLayers(design.layers)
+    setActiveDesignId(id)
+    setSavingAsNew(false)
+    setNewName('')
+    setDesignLimitNotice(false)
+    setNamedFor({ productId: design.productId, name: design.name })
+    editor.loadLayers(mergeLoadedLayers(editor.layers, design.layers))
+    setZoomFor({ productId: design.productId, value: clampZoom(design.zoom ?? 1) })
+    setProductMissing(false)
+    void selectById(design.productId).then((found) => {
+      if (!found) setProductMissing(true)
+    })
+  }
+
+  const handleSelectProduct = (nextProductId: string) => {
+    setProductMissing(false)
+    setZoomFor({ productId: nextProductId, value: ZOOM_MIN })
+    for (const layer of editor.layers) {
+      if (layer.type === 'image' && layer.visible) {
+        editor.updateLayer(layer.id, { visible: false })
+      }
+    }
+    select(nextProductId)
   }
 
   const handleDelete = (id: string) => {
     deleteDesign(id)
     setSaved(listDesigns())
+    setDesignLimitNotice(false)
+    if (id === activeDesignId) setActiveDesignId(null)
     void cleanupBlobs()
   }
 
-  const versions = saved.filter((design) => design.id !== 'autosave')
-
   return (
-    <section id="editor" className="relative scroll-mt-20 border-t border-brand-line py-16">
+    <section id="editor" className="relative scroll-mt-20 border-t border-brand-line py-10 md:py-16">
       <div className="mx-auto max-w-7xl px-4">
         <header className="mb-8">
           <p className="mb-2 text-xs font-bold uppercase tracking-widest text-brand-cyan">
@@ -266,21 +406,56 @@ export function EditorSection() {
         ) : (
           <>
             <div className="grid gap-4 lg:grid-cols-[250px_minmax(0,1fr)_260px]">
-              <div className="space-y-5 rounded-lg border border-brand-line bg-brand-surface p-3">
+              <div className="min-w-0 space-y-5 rounded-lg border border-brand-line bg-brand-surface p-3">
                 <ProductPicker
                   products={products}
                   productId={productId}
-                  onChange={select}
+                  onChange={handleSelectProduct}
                   layerCount={editor.layers.length}
+                  localCount={localCount}
+                  userAddedIds={userAddedIds}
                 />
-                <LogoUploader onAdd={editor.addImageLayer} />
-                <button
-                  type="button"
-                  onClick={editor.addTextLayer}
-                  className="w-full rounded-lg border border-brand-line px-3 py-2 text-xs font-semibold text-brand-light transition hover:border-brand-cyan hover:text-brand-cyan"
-                >
-                  + Agregar texto
-                </button>
+
+                {productMissing && (
+                  <p role="status" className="text-[11px] leading-snug text-brand-pink">
+                    La foto de este diseño ya no está en el catálogo; quedó la prenda anterior.
+                  </p>
+                )}
+                <div className="space-y-2">
+                  <div className="grid grid-cols-2 gap-2">
+                    <LogoUploader
+                      onAdd={(input) => {
+                        setLayerLimitNotice(false)
+                        editor.addImageLayer(input)
+                      }}
+                      remaining={Math.max(0, MAX_LAYERS - layerCount)}
+                      onLimitReached={() => setLayerLimitNotice(true)}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (atLayerLimit) {
+                          setLayerLimitNotice(true)
+                          return
+                        }
+                        setLayerLimitNotice(false)
+                        editor.addTextLayer()
+                      }}
+                      className="rounded-lg border border-brand-line px-3 py-2.5 text-xs font-semibold text-brand-light transition hover:border-brand-cyan hover:text-brand-cyan"
+                    >
+                      + Agregar texto
+                    </button>
+                  </div>
+                  {atLayerLimit && layerLimitNotice && (
+                    <p role="alert" className="text-[11px] leading-snug text-brand-pink">
+                      Llegaste al límite de {MAX_LAYERS} capas. Eliminá alguna para poder agregar
+                      otra.
+                    </p>
+                  )}
+                  <p className="text-[10px] leading-snug text-brand-muted">
+                    Un PNG con fondo transparente da el mejor resultado.
+                  </p>
+                </div>
               </div>
 
               <div className="min-w-0 space-y-3">
@@ -291,59 +466,67 @@ export function EditorSection() {
                   onUndo={editor.undo}
                   onRedo={editor.redo}
                   onClear={editor.clearLayers}
-                  onExport={handleExport}
-                  exporting={exporting}
                   canAttach={isSupabaseConfigured()}
                   onAttach={handleAttach}
                   attachState={attachment.status}
+                  attachmentCount={attachment.count}
+                  isAlreadyAttached={isAlreadyAttached}
                   onSaveJump={handleSaveJump}
+                  isSaved={isCurrentSaved}
                 />
 
-                <div ref={shellRef} className="relative">
-                  <EditorCanvas
-                    product={product}
-                    layers={editor.layers}
-                    selectedId={editor.selectedId}
-                    metrics={metrics}
-                    stageRef={stageRef}
-                    editingId={editingId}
-                    onEditingChange={setEditingId}
-                    onSelect={editor.setSelectedId}
-                    onCommit={handleCommit}
-                  />
+                <div className="relative">
+                  <div
+                    ref={shellRef}
+                    style={{ height: CANVAS_HEIGHT }}
+                    className={`trama-scroll overflow-auto ${zoom > 1 ? 'cursor-grab active:cursor-grabbing' : ''}`}
+                  >
+                    <EditorCanvas
+                      product={product}
+                      layers={editor.layers}
+                      selectedId={editor.selectedId}
+                      metrics={metrics}
+                      stageRef={stageRef}
+                      viewportRef={shellRef}
+                      canPan={zoom > 1}
+                      editingId={editingId}
+                      onEditingChange={setEditingId}
+                      onSelect={editor.setSelectedId}
+                      onCommit={handleCommit}
+                    />
+                  </div>
+
+                  <ZoomControl zoom={zoom} onChange={handleZoom} />
                 </div>
 
                 <p className="text-[11px] text-brand-muted">
-                  Doble click en un texto para editarlo · Supr para borrar · Ctrl+Z deshacer ·
+                  Doble click en un texto para editarlo · Supr para ocultar · Ctrl+Z deshacer ·
                   flechas para mover · Shift+flechas para pasos de 10 px
+                  {zoom > 1 && ' · Arrastrá la prenda para mover la vista'}
                 </p>
               </div>
 
-              <div className="space-y-4 rounded-lg border border-brand-line bg-brand-surface p-3">
-                <PropertiesPanel
-                  layer={editor.selected}
-                  onChange={(patch) => {
-                    if (editor.selectedId) handleCommit(editor.selectedId, patch)
-                  }}
-                />
-
+              <div className="min-w-0 space-y-4 rounded-lg border border-brand-line bg-brand-surface p-3">
                 <div>
-                  <h3 className="mb-2 text-[11px] font-bold uppercase tracking-widest text-brand-muted">
-                    Capas
+                  <h3 className="mb-2 flex items-center justify-between gap-2 text-[11px] font-bold uppercase tracking-widest text-brand-muted">
+                    <span>Capas</span>
+                    <span
+                      className={`tabular-nums ${
+                        atLayerLimit ? 'text-brand-cyan' : 'text-brand-muted'
+                      }`}
+                    >
+                      {layerCount}/{MAX_LAYERS}
+                    </span>
                   </h3>
                   <LayersPanel
                     layers={editor.layers}
                     selectedId={editor.selectedId}
-                    onSelect={editor.setSelectedId}
+                    onSelect={handleSelectLayer}
+                    onChange={handleCommit}
                     onToggleVisible={(id) => {
                       const layer = editor.layers.find((item) => item.id === id)
                       if (layer) handleCommit(id, { visible: !layer.visible } as Partial<Layer>)
                     }}
-                    onToggleLocked={(id) => {
-                      const layer = editor.layers.find((item) => item.id === id)
-                      if (layer) handleCommit(id, { locked: !layer.locked } as Partial<Layer>)
-                    }}
-                    onReorder={editor.reorderLayer}
                     onRemove={editor.removeLayer}
                   />
                 </div>
@@ -355,8 +538,17 @@ export function EditorSection() {
               name={designName}
               saveState={saveState}
               highlight={highlightSaved}
-              onNameChange={setDesignName}
-              onSave={handleSaveVersion}
+              activeId={activeDesignId}
+              savingAsNew={savingAsNew}
+              newName={newName}
+              savedCount={savedCount}
+              maxSaved={MAX_SAVED_DESIGNS}
+              limitNotice={designLimitNotice}
+              canSaveChanges={canSaveChanges}
+              onNewNameChange={setNewName}
+              onSaveChanges={handleSaveChanges}
+              onSaveAsNew={handleSaveAsNew}
+              onCancelNew={handleCancelNew}
               onLoad={handleLoad}
               onDelete={handleDelete}
             />
@@ -364,103 +556,5 @@ export function EditorSection() {
         )}
       </div>
     </section>
-  )
-}
-
-type SavedProps = {
-  versions: ReturnType<typeof listDesigns>
-  name: string
-  saveState: 'idle' | 'saving' | 'saved'
-  highlight: boolean
-  onNameChange: (value: string) => void
-  onSave: () => void
-  onLoad: (id: string) => void
-  onDelete: (id: string) => void
-}
-
-function SavedDesigns({
-  versions,
-  name,
-  saveState,
-  highlight,
-  onNameChange,
-  onSave,
-  onLoad,
-  onDelete,
-}: SavedProps) {
-  return (
-    <div
-      id="mis-disenos"
-      className={`mt-8 scroll-mt-20 rounded-lg border p-4 transition ${
-        highlight
-          ? 'border-brand-cyan bg-brand-cyan/5 ring-2 ring-brand-cyan/70'
-          : 'border-brand-line bg-brand-surface'
-      }`}
-    >
-      <div className="flex flex-wrap items-center gap-2">
-        <h3 className="text-[11px] font-bold uppercase tracking-widest text-brand-muted">
-          Mis diseños
-        </h3>
-        <span aria-live="polite" className="text-[11px] text-brand-muted">
-          {saveState === 'saving' && 'Guardando...'}
-          {saveState === 'saved' && '✓ Guardado en este dispositivo'}
-        </span>
-
-        <div className="ml-auto flex flex-wrap items-center gap-2">
-          <input
-            value={name}
-            onChange={(event) => onNameChange(event.target.value)}
-            aria-label="Nombre del diseño"
-            className="rounded border border-brand-line bg-brand-black px-2.5 py-1.5 text-xs text-brand-light outline-none focus:border-brand-cyan"
-          />
-          <button
-            type="button"
-            onClick={onSave}
-            className="rounded border border-brand-line px-3 py-1.5 text-xs font-semibold text-brand-light transition hover:border-brand-cyan hover:text-brand-cyan"
-          >
-            Guardar versión
-          </button>
-        </div>
-      </div>
-
-      {versions.length === 0 ? (
-        <p className="mt-3 text-[11px] text-brand-muted">
-          No hay versiones guardadas. Tu trabajo actual se guarda solo; usá "Guardar versión"
-          para conservar una copia con nombre.
-        </p>
-      ) : (
-        <ul className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
-          {versions.map((design) => (
-            <li
-              key={design.id}
-              className="flex items-center gap-2 rounded border border-brand-line bg-brand-black/40 px-2.5 py-2"
-            >
-              <button
-                type="button"
-                onClick={() => onLoad(design.id)}
-                className="min-w-0 flex-1 text-left"
-              >
-                <span className="block truncate text-xs font-semibold text-brand-light">
-                  {design.name}
-                </span>
-                <span className="block text-[10px] text-brand-muted">
-                  {new Date(design.updatedAt).toLocaleDateString('es-AR')} ·{' '}
-                  {design.layers.length}{' '}
-                  {design.layers.length === 1 ? 'capa' : 'capas'}
-                </span>
-              </button>
-              <button
-                type="button"
-                onClick={() => onDelete(design.id)}
-                aria-label={`Borrar ${design.name}`}
-                className="w-5 rounded text-center text-brand-muted transition hover:bg-brand-pink/20 hover:text-brand-pink"
-              >
-                ×
-              </button>
-            </li>
-          ))}
-        </ul>
-      )}
-    </div>
   )
 }

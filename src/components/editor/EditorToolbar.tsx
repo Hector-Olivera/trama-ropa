@@ -1,6 +1,9 @@
-import { useState } from 'react'
-import type { ExportFormat, ExportScale } from '../../types'
+import { useEffect, useRef, useState } from 'react'
 import type { AttachmentStatus } from '../DesignAttachment'
+
+type TipKind = 'limit' | 'save-first' | 'limit-save' | 'attached'
+
+type TipPosition = { bottom: number; right: number }
 
 type Props = {
   canUndo: boolean
@@ -9,14 +12,23 @@ type Props = {
   onUndo: () => void
   onRedo: () => void
   onClear: () => void
-  onExport: (options: { scale: ExportScale; format: ExportFormat }) => void
-  exporting: boolean
-  /** Adjunto al mail. En local no hay donde subirlo, y ahi se oculta. */
   canAttach: boolean
   onAttach: () => void
   attachState: AttachmentStatus
-  /** Lleva hasta "Mis disenos" para bautizar el diseño. */
+  attachmentCount: number
+  isAlreadyAttached: boolean
   onSaveJump: () => void
+  isSaved: boolean
+}
+
+const GLOW_DURATION = 3000
+const MAX_ATTACHMENTS = 2
+
+const TIP_TEXT: Record<TipKind, string> = {
+  limit: 'Solo se pueden adjuntar 2 archivos',
+  'save-first': 'Debes guardar tu diseño primero',
+  'limit-save': 'Solo podés adjuntar 2 archivos, pero podés guardarlo para enviarlo después',
+  attached: 'Este diseño ya está adjuntado',
 }
 
 export function EditorToolbar({
@@ -26,89 +38,152 @@ export function EditorToolbar({
   onUndo,
   onRedo,
   onClear,
-  onExport,
-  exporting,
   canAttach,
   onAttach,
   attachState,
+  attachmentCount,
+  isAlreadyAttached,
   onSaveJump,
+  isSaved,
 }: Props) {
-  const [scale, setScale] = useState<ExportScale>(2)
-  const [format, setFormat] = useState<ExportFormat>('png')
+  const atLimit = attachmentCount >= MAX_ATTACHMENTS
+  const attaching = attachState === 'rendering' || attachState === 'uploading'
+
+  const [tip, setTip] = useState<TipKind | null>(null)
+  const [tipPosition, setTipPosition] = useState<TipPosition | null>(null)
+  const [saveGlow, setSaveGlow] = useState(false)
+  const attachRef = useRef<HTMLButtonElement | null>(null)
+  const glowTimer = useRef<number | null>(null)
+
+  const reason: TipKind | null = atLimit
+    ? isSaved
+      ? 'limit'
+      : 'limit-save'
+    : isAlreadyAttached
+      ? 'attached'
+      : isSaved
+        ? null
+        : 'save-first'
+
+  const clearGlowTimer = () => {
+    if (glowTimer.current !== null) {
+      window.clearTimeout(glowTimer.current)
+      glowTimer.current = null
+    }
+  }
+
+  const showTip = () => {
+    if (!reason) {
+      setTip(null)
+      return
+    }
+    const rect = attachRef.current?.getBoundingClientRect()
+    if (rect) {
+      setTipPosition({
+        bottom: window.innerHeight - rect.top + 8,
+        right: window.innerWidth - rect.right,
+      })
+    }
+    setTip(reason)
+  }
+
+  const hideTip = () => {
+    setTip(null)
+  }
+
+  const flashSave = () => {
+    setSaveGlow(true)
+    clearGlowTimer()
+    glowTimer.current = window.setTimeout(() => {
+      setSaveGlow(false)
+      glowTimer.current = null
+    }, GLOW_DURATION)
+  }
+
+  useEffect(() => {
+    if (!tip) return
+    const dismiss = () => setTip(null)
+    window.addEventListener('pointerdown', dismiss, true)
+    window.addEventListener('scroll', dismiss, true)
+    return () => {
+      window.removeEventListener('pointerdown', dismiss, true)
+      window.removeEventListener('scroll', dismiss, true)
+    }
+  }, [tip])
+
+  const handleAttachClick = () => {
+    if (attaching || !hasLayers) return
+    showTip()
+    if (atLimit) {
+      if (!isSaved) flashSave()
+      return
+    }
+    if (isAlreadyAttached) return
+    if (!isSaved) {
+      flashSave()
+      return
+    }
+    onAttach()
+  }
 
   return (
-    <div className="flex flex-wrap items-center gap-2">
-      <div className="flex gap-1">
-        <Button onClick={onUndo} disabled={!canUndo} label="Deshacer (Ctrl+Z)">
-          ↶
+    <div className="flex flex-nowrap items-center gap-2">
+      <div className="trama-scroll flex min-w-0 flex-1 flex-nowrap items-center gap-2 overflow-x-auto">
+        <div className="flex flex-nowrap gap-1">
+          <Button onClick={onUndo} disabled={!canUndo} label="Deshacer (Ctrl+Z)">
+            ↶
+          </Button>
+          <Button onClick={onRedo} disabled={!canRedo} label="Rehacer (Ctrl+Shift+Z)">
+            ↷
+          </Button>
+        </div>
+
+        <Button onClick={onClear} disabled={!hasLayers} danger label="Vaciar diseño">
+          Vaciar
         </Button>
-        <Button onClick={onRedo} disabled={!canRedo} label="Rehacer (Ctrl+Shift+Z)">
-          ↷
-        </Button>
-      </div>
 
-      <Button onClick={onClear} disabled={!hasLayers} danger label="Vaciar diseño">
-        Vaciar
-      </Button>
-
-      <div className="ml-auto flex flex-wrap items-center gap-2">
-        <label className="flex items-center gap-1.5 text-[11px] text-brand-muted">
-          Formato
-          <select
-            value={format}
-            onChange={(event) => setFormat(event.target.value as ExportFormat)}
-            className="rounded border border-brand-line bg-brand-black px-1.5 py-1 text-[11px] text-brand-light outline-none focus:border-brand-cyan"
-          >
-            <option value="png">PNG (transparente)</option>
-            <option value="jpeg">JPG (fondo blanco)</option>
-          </select>
-        </label>
-
-        <label className="flex items-center gap-1.5 text-[11px] text-brand-muted">
-          Calidad
-          <select
-            value={scale}
-            onChange={(event) => setScale(Number(event.target.value) as ExportScale)}
-            className="rounded border border-brand-line bg-brand-black px-1.5 py-1 text-[11px] text-brand-light outline-none focus:border-brand-cyan"
-          >
-            <option value={1}>1x</option>
-            <option value={2}>2x</option>
-            <option value={3}>3x</option>
-          </select>
-        </label>
-
-        <button
-          type="button"
-          onClick={onSaveJump}
-          className="rounded-md border border-brand-line bg-brand-surface px-3.5 py-1.5 text-xs font-bold text-brand-light transition hover:border-brand-cyan hover:text-brand-cyan"
-        >
-          Guardar
-        </button>
-
-        <button
-          type="button"
-          onClick={() => onExport({ scale, format })}
-          disabled={!hasLayers || exporting}
-          className="rounded-md bg-brand-cyan px-3.5 py-1.5 text-xs font-bold text-brand-black transition hover:bg-brand-pink hover:text-white disabled:cursor-not-allowed disabled:opacity-40"
-        >
-          {exporting ? 'Exportando...' : 'Descargar'}
-        </button>
-
-        {canAttach && (
+        <div className="ml-auto flex flex-nowrap items-center gap-2">
           <button
             type="button"
-            onClick={onAttach}
-            disabled={!hasLayers || attachState === 'rendering' || attachState === 'uploading'}
-            className="rounded-md border border-brand-line bg-brand-surface px-3.5 py-1.5 text-xs font-bold text-brand-light transition hover:border-brand-cyan hover:text-brand-cyan disabled:cursor-not-allowed disabled:opacity-40"
+            onClick={onSaveJump}
+            className={`shrink-0 rounded-md border border-brand-line bg-brand-surface px-3.5 py-1.5 text-xs font-bold whitespace-nowrap text-brand-light transition hover:border-brand-cyan hover:text-brand-cyan ${
+              saveGlow ? 'animate-glow-pulse border-brand-cyan' : ''
+            }`}
           >
-            {attachState === 'rendering' || attachState === 'uploading'
-              ? 'Preparando...'
-              : attachState === 'ready'
-                ? 'Adjunto listo'
-                : 'Adjuntar al mail'}
+            Guardar
           </button>
-        )}
+
+          {canAttach && (
+            <button
+              ref={attachRef}
+              type="button"
+              onClick={handleAttachClick}
+              onPointerEnter={showTip}
+              onPointerLeave={hideTip}
+              disabled={attaching || !hasLayers}
+              className={`shrink-0 rounded-md border px-3.5 py-1.5 text-xs font-bold whitespace-nowrap transition disabled:cursor-not-allowed disabled:opacity-40 ${
+                attachmentCount > 0 && !atLimit
+                  ? 'border-brand-cyan bg-brand-cyan/10 text-brand-cyan hover:bg-brand-cyan hover:text-brand-black'
+                  : 'border-brand-line bg-brand-surface text-brand-light hover:border-brand-cyan hover:text-brand-cyan'
+              }`}
+            >
+              {attaching
+                ? 'Preparando...'
+                : `Adjuntar al mail (${attachmentCount}/${MAX_ATTACHMENTS})`}
+            </button>
+          )}
+        </div>
       </div>
+
+      {tip && (
+        <div
+          role="status"
+          style={tipPosition ? { bottom: tipPosition.bottom, right: tipPosition.right } : undefined}
+          className="pointer-events-none fixed z-50 max-w-[min(20rem,calc(100vw-1rem))] rounded border border-brand-line bg-brand-black px-2 py-1 text-[10px] leading-snug text-brand-light shadow-lg"
+        >
+          {TIP_TEXT[tip]}
+        </div>
+      )}
     </div>
   )
 }
@@ -133,7 +208,7 @@ function Button({
       disabled={disabled}
       title={label}
       aria-label={label}
-      className={`rounded border px-2.5 py-1.5 text-[11px] font-semibold transition disabled:cursor-not-allowed disabled:opacity-30 ${
+      className={`shrink-0 rounded border px-2.5 py-1.5 text-[11px] font-semibold transition disabled:cursor-not-allowed disabled:opacity-30 ${
         danger
           ? 'border-brand-line text-brand-muted hover:border-brand-pink hover:text-brand-pink'
           : 'border-brand-line text-brand-muted hover:border-brand-muted hover:text-brand-light'

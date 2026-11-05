@@ -1,5 +1,5 @@
 import { useLayoutEffect, useRef, useState } from 'react'
-import type { CanvasMetrics } from './EditorCanvas'
+import type { CanvasMetrics } from '../../lib/canvasMetrics'
 import type { TextLayer } from '../../types'
 
 type Props = {

@@ -2,6 +2,7 @@ import { lazy, Suspense } from 'react'
 import { Catalog } from './components/Catalog'
 import { Contact } from './components/Contact'
 import { DesignAttachmentProvider } from './components/DesignAttachment'
+import { FloatingAttachment } from './components/FloatingAttachment'
 import { EditorProductsProvider } from './components/EditorProducts'
 import { Footer } from './components/Footer'
 import { Hero } from './components/Hero'
@@ -16,7 +17,7 @@ const EditorSection = lazy(() =>
 
 function EditorFallback() {
   return (
-    <section id="editor" className="scroll-mt-20 border-t border-brand-line px-4 py-24 text-center">
+    <section id="editor" className="scroll-mt-20 border-t border-brand-line px-4 py-16 text-center md:py-24">
       <p className="text-sm font-bold uppercase tracking-widest text-brand-cyan">
         Preparando el editor
       </p>
@@ -52,6 +53,7 @@ export function Landing() {
               <Contact />
             </SectionBoundary>
           </EditorProductsProvider>
+          <FloatingAttachment />
         </DesignAttachmentProvider>
       </main>
       <SectionBoundary>

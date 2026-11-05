@@ -8,19 +8,14 @@ import {
 } from 'react-konva'
 import type Konva from 'konva'
 import type { ImageLayer, Layer, ProductView, TextLayer } from '../../types'
+import type { CanvasMetrics } from '../../lib/canvasMetrics'
 import { getLoadedImage, loadImage } from '../../lib/images'
 import { resolveDrawableSrc } from '../../lib/storage'
 import { filterKey, getFilteredCanvas, isFilterNeutral } from '../../lib/imageFilters'
 import { useLoadedImage } from '../../content/useLoadedImage'
 import { TextOverlay } from './TextOverlay'
 
-export type CanvasMetrics = {
-  stageWidth: number
-  stageHeight: number
-  scale: number
-  offsetX: number
-  offsetY: number
-}
+const PAN_THRESHOLD = 4
 
 type Props = {
   product: ProductView
@@ -28,10 +23,20 @@ type Props = {
   selectedId: string | null
   metrics: CanvasMetrics
   stageRef: React.RefObject<Konva.Stage | null>
+  viewportRef: React.RefObject<HTMLDivElement | null>
+  canPan: boolean
   onSelect: (id: string | null) => void
   onCommit: (id: string, patch: Partial<Layer>) => void
   onEditingChange: (id: string | null) => void
   editingId: string | null
+}
+
+function pointerOf(event: MouseEvent | TouchEvent): { x: number; y: number } | null {
+  if ('touches' in event) {
+    const touch = event.touches[0]
+    return touch ? { x: touch.clientX, y: touch.clientY } : null
+  }
+  return { x: event.clientX, y: event.clientY }
 }
 
 export function EditorCanvas({
@@ -40,6 +45,8 @@ export function EditorCanvas({
   selectedId,
   metrics,
   stageRef,
+  viewportRef,
+  canPan,
   onSelect,
   onCommit,
   onEditingChange,
@@ -48,6 +55,7 @@ export function EditorCanvas({
   const { stageWidth, stageHeight, scale, offsetX, offsetY } = metrics
   const transformerRef = useRef<Konva.Transformer>(null)
   const nodeRefs = useRef(new Map<string, Konva.Node>())
+  const panCleanupRef = useRef<(() => void) | null>(null)
   const productImage = useLoadedImage(product.src)
 
   const editingLayer = useMemo(
@@ -65,24 +73,79 @@ export function EditorCanvas({
     transformer.getLayer()?.batchDraw()
   }, [selectedId, layers])
 
-  const deselectIfBackground = useCallback(
+  const clearSelection = useCallback(() => {
+    onSelect(null)
+    onEditingChange(null)
+  }, [onEditingChange, onSelect])
+
+  useEffect(() => () => panCleanupRef.current?.(), [])
+
+  const startPan = useCallback(
     (event: Konva.KonvaEventObject<MouseEvent | TouchEvent>) => {
-      if (event.target === event.target.getStage()) {
-        onSelect(null)
-        onEditingChange(null)
+      const viewport = viewportRef.current
+      const start = pointerOf(event.evt)
+      if (!viewport || !start || panCleanupRef.current) return
+
+      const origin = {
+        x: start.x,
+        y: start.y,
+        left: viewport.scrollLeft,
+        top: viewport.scrollTop,
       }
+      let moved = false
+
+      const onMove = (moveEvent: MouseEvent | TouchEvent) => {
+        const next = pointerOf(moveEvent)
+        if (!next) return
+        const dx = next.x - origin.x
+        const dy = next.y - origin.y
+        if (!moved && Math.abs(dx) + Math.abs(dy) < PAN_THRESHOLD) return
+        moved = true
+        viewport.scrollLeft = origin.left - dx
+        viewport.scrollTop = origin.top - dy
+        if ('touches' in moveEvent) moveEvent.preventDefault()
+      }
+
+      const finish = () => {
+        window.removeEventListener('mousemove', onMove)
+        window.removeEventListener('mouseup', finish)
+        window.removeEventListener('touchmove', onMove)
+        window.removeEventListener('touchend', finish)
+        window.removeEventListener('touchcancel', finish)
+        panCleanupRef.current = null
+        if (!moved) clearSelection()
+      }
+
+      window.addEventListener('mousemove', onMove)
+      window.addEventListener('mouseup', finish)
+      window.addEventListener('touchmove', onMove, { passive: false })
+      window.addEventListener('touchend', finish)
+      window.addEventListener('touchcancel', finish)
+      panCleanupRef.current = finish
     },
-    [onEditingChange, onSelect],
+    [clearSelection, viewportRef],
+  )
+
+  const handleBackgroundDown = useCallback(
+    (event: Konva.KonvaEventObject<MouseEvent | TouchEvent>) => {
+      if (event.target !== event.target.getStage()) return
+      if (canPan) {
+        startPan(event)
+        return
+      }
+      clearSelection()
+    },
+    [canPan, clearSelection, startPan],
   )
 
   return (
-    <>
+    <div className="relative" style={{ width: stageWidth, height: stageHeight }}>
       <KonvaStage
         ref={stageRef}
         width={stageWidth}
         height={stageHeight}
-        onMouseDown={deselectIfBackground}
-        onTouchStart={deselectIfBackground}
+        onMouseDown={handleBackgroundDown}
+        onTouchStart={handleBackgroundDown}
       >
         <KonvaLayer listening={false}>
           {productImage && (
@@ -141,7 +204,7 @@ export function EditorCanvas({
         }}
         onDone={() => onEditingChange(null)}
       />
-    </>
+    </div>
   )
 }
 

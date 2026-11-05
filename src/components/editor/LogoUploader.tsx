@@ -3,10 +3,18 @@ import { isSupportedImageType, prepareLogoFile } from '../../lib/images'
 import { putLogoBlob } from '../../lib/storage'
 
 type Props = {
-  onAdd: (input: { src: string; naturalWidth: number; naturalHeight: number }) => Promise<void> | void
+  onAdd: (input: {
+    src: string
+    naturalWidth: number
+    naturalHeight: number
+    name: string
+  }) => Promise<void> | void
+  /** Cuántas capas más entran antes del tope. */
+  remaining: number
+  onLimitReached: () => void
 }
 
-export function LogoUploader({ onAdd }: Props) {
+export function LogoUploader({ onAdd, remaining, onLimitReached }: Props) {
   const [dragging, setDragging] = useState(false)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -15,17 +23,30 @@ export function LogoUploader({ onAdd }: Props) {
   const handleFiles = async (files: FileList | null) => {
     if (!files || files.length === 0) return
 
+    const selected = Array.from(files)
+    const accepted = selected.slice(0, Math.max(0, remaining))
+    if (accepted.length === 0) {
+      onLimitReached()
+      return
+    }
+    if (accepted.length < selected.length) onLimitReached()
+
     setBusy(true)
     setError(null)
 
     try {
-      for (const file of Array.from(files)) {
+      for (const file of accepted) {
         if (!isSupportedImageType(file)) {
           throw new Error(`"${file.name}" no es un formato válido. Usá PNG, JPG o WEBP.`)
         }
         const { blob, width, height } = await prepareLogoFile(file)
         // El src que viaja a la capa es la clave persistente, no una object URL.
-        await onAdd({ src: await putLogoBlob(blob), naturalWidth: width, naturalHeight: height })
+        await onAdd({
+          src: await putLogoBlob(blob),
+          naturalWidth: width,
+          naturalHeight: height,
+          name: file.name.replace(/\.[^.]+$/, ''),
+        })
       }
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : 'No se pudo subir el archivo.')
@@ -35,15 +56,19 @@ export function LogoUploader({ onAdd }: Props) {
     }
   }
 
+  const openPicker = () => {
+    if (remaining <= 0) {
+      onLimitReached()
+      return
+    }
+    inputRef.current?.click()
+  }
+
   return (
     <div>
-      <h3 className="mb-2 text-[11px] font-bold uppercase tracking-widest text-brand-muted">
-        Tu logo
-      </h3>
-
       <button
         type="button"
-        onClick={() => inputRef.current?.click()}
+        onClick={openPicker}
         onDragOver={(event) => {
           event.preventDefault()
           setDragging(true)
@@ -55,19 +80,15 @@ export function LogoUploader({ onAdd }: Props) {
           void handleFiles(event.dataTransfer.files)
         }}
         disabled={busy}
-        className={`flex w-full flex-col items-center justify-center gap-1 rounded-lg border border-dashed px-3 py-6 text-center transition ${
+        title="PNG con fondo transparente da el mejor resultado"
+        className={`flex w-full items-center justify-center gap-1.5 rounded-lg border border-dashed px-3 py-2.5 text-xs font-semibold text-brand-light transition ${
           dragging
-            ? 'border-brand-cyan bg-brand-cyan/10'
-            : 'border-brand-line hover:border-brand-muted'
+            ? 'border-brand-cyan bg-brand-cyan/10 text-brand-cyan'
+            : 'border-brand-line hover:border-brand-cyan hover:text-brand-cyan'
         } ${busy ? 'cursor-wait opacity-60' : ''}`}
       >
-        <span className="text-xl" aria-hidden="true">
-          +
-        </span>
-        <span className="text-xs font-semibold text-brand-light">
-          {busy ? 'Procesando...' : 'Subir logo'}
-        </span>
-        <span className="text-[11px] text-brand-muted">o arrastralo acá · PNG/JPG/WEBP</span>
+        <span aria-hidden="true">+</span>
+        <span>{busy ? 'Procesando...' : 'Subir logo'}</span>
       </button>
 
       <input
@@ -84,10 +105,6 @@ export function LogoUploader({ onAdd }: Props) {
           {error}
         </p>
       )}
-
-      <p className="mt-2 text-[11px] leading-snug text-brand-muted">
-        Un PNG con fondo transparente da el mejor resultado.
-      </p>
     </div>
   )
 }

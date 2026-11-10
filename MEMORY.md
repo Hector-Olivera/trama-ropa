@@ -53,6 +53,13 @@ cambia, se reescribe acá. `AGENTS.md` tiene las reglas de trabajo y los comando
   contenido (no hardcodear atajos: se editan en el admin); cierra al navegar y con Escape.
   Las secciones usan `py-10 md:py-16` (el desktop conserva el espaciado grande) y las 4 fotos
   de "Cómo funciona" van en una sola fila (`grid-cols-4`) también en mobile.
+- **Alto del editor en desktop**: el wrapper de header + grilla mide
+  `calc(100dvh - var(--nav-height))` (token `--nav-height: 60px` en `index.css`) y el ancla usa
+  `scroll-mt` igual al nav, así el workspace (selector, lienzo, toolbar y capas) entra completo
+  bajo el menú; "Mis diseños" queda debajo. El lienzo es flexible (`h-[640px] lg:h-full`) y las
+  métricas usan el **alto medido** del shell (`useElementSize`) en vez de la constante fija. Los
+  paneles laterales scrollean dentro (`lg:overflow-y-auto` + `trama-scroll`). Mobile/tablet no
+  cambian (640px).
 - **Barra del editor** (`EditorToolbar`): una sola línea con scroll horizontal interno. Los
   carteles (`limit` / `save-first` / `limit-save` / `attached`) se dibujan con
   `position: fixed` anclados al rect del botón: un `absolute` dentro de un contenedor con
@@ -155,6 +162,10 @@ cambia, se reescribe acá. `AGENTS.md` tiene las reglas de trabajo y los comando
   de email es un `mailto:` (abre el cliente de correo; el "elegí una app" es del SO, no un bug).
   Los diseños adjuntados viajan como **link firmado** en el cuerpo del mensaje; al enviar con
   éxito se limpian (`clear()` del contexto, revoca las vistas previas).
+- **Cartel de éxito**: al enviar aparece un aviso fijo abajo al centro (4 s, `role="status"`,
+  borde cyan/fondo negro, `bottom-20 sm:bottom-6` para no tapar el botón flotante) con
+  "Mensaje Enviado" / "Nos comunicaremos a la brevedad". Reemplaza el mensaje inline
+  "¡Gracias!". El timer vive en un ref y se limpia al desmontar y al iniciar otro envío.
 - **Botón flotante** (`FloatingAttachment`, montado en `Landing` junto a los providers):
   aparece únicamente mientras haya diseños adjuntados. Es un **flecha SVG con el texto
   adentro** (punta abajo "Enviar Diseño", punta arriba "Volver"; `fill` negro/65% +

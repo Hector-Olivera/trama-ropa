@@ -52,6 +52,8 @@ export function EditorSection() {
     localProducts,
     activeDesignId,
     setActiveDesignId,
+    panel,
+    setPanel,
   } = useEditorProducts()
   const attachment = useDesignAttachment()
   const userAddedIds = useMemo(() => localProducts.map((item) => item.id), [localProducts])
@@ -92,7 +94,6 @@ export function EditorSection() {
   const [savingAsNew, setSavingAsNew] = useState(false)
   const [newName, setNewName] = useState('')
   const [designLimitNotice, setDesignLimitNotice] = useState(false)
-  const [panel, setPanel] = useState<'prendas' | 'capas'>('prendas')
   const layerCount = editor.layers.length
   const atLayerLimit = layerCount >= MAX_LAYERS
   const versions = useMemo(
@@ -274,7 +275,7 @@ export function EditorSection() {
 
   const handleSaveJump = useCallback(() => {
     setHighlightSaved(true)
-    scrollToId('mis-disenos')
+    scrollToId('mis-disenos', 'end')
   }, [])
 
   const handleSaveChanges = useCallback(() => {
@@ -360,6 +361,7 @@ export function EditorSection() {
     editor.loadLayers(mergeLoadedLayers(editor.layers, design.layers))
     setZoomFor({ productId: design.productId, value: clampZoom(design.zoom ?? 1) })
     setProductMissing(false)
+    setPanel('capas')
     void selectById(design.productId).then((found) => {
       if (!found) setProductMissing(true)
     })
@@ -439,10 +441,10 @@ export function EditorSection() {
                   id="editor-panel"
                   role="tabpanel"
                   aria-labelledby={`editor-tab-${panel}`}
-                  className="trama-scroll min-h-0 min-w-0 rounded-lg border border-brand-line bg-brand-surface p-3 lg:flex-1 lg:overflow-y-auto"
+                  className="min-h-0 min-w-0 rounded-lg border border-brand-line bg-brand-surface p-3 lg:flex lg:min-h-0 lg:flex-1 lg:flex-col lg:overflow-hidden"
                 >
                   {panel === 'prendas' ? (
-                    <div className="space-y-5">
+                    <div className="trama-scroll space-y-5 lg:min-h-0 lg:flex-1 lg:overflow-y-auto">
                       <ProductPicker
                         products={products}
                         productId={productId}
@@ -458,45 +460,10 @@ export function EditorSection() {
                           anterior.
                         </p>
                       )}
-                      <div className="space-y-2">
-                        <div className="grid grid-cols-2 gap-2">
-                          <LogoUploader
-                            onAdd={(input) => {
-                              setLayerLimitNotice(false)
-                              editor.addImageLayer(input)
-                            }}
-                            remaining={Math.max(0, MAX_LAYERS - layerCount)}
-                            onLimitReached={() => setLayerLimitNotice(true)}
-                          />
-                          <button
-                            type="button"
-                            onClick={() => {
-                              if (atLayerLimit) {
-                                setLayerLimitNotice(true)
-                                return
-                              }
-                              setLayerLimitNotice(false)
-                              editor.addTextLayer()
-                            }}
-                            className="rounded-lg border border-brand-line px-3 py-2.5 text-xs font-semibold text-brand-light transition hover:border-brand-cyan hover:text-brand-cyan"
-                          >
-                            + Agregar texto
-                          </button>
-                        </div>
-                        {atLayerLimit && layerLimitNotice && (
-                          <p role="alert" className="text-[11px] leading-snug text-brand-pink">
-                            Llegaste al límite de {MAX_LAYERS} capas. Eliminá alguna para poder
-                            agregar otra.
-                          </p>
-                        )}
-                        <p className="text-[10px] leading-snug text-brand-muted">
-                          Un PNG con fondo transparente da el mejor resultado.
-                        </p>
-                      </div>
                     </div>
                   ) : (
-                    <div className="space-y-4">
-                      <div>
+                    <div className="lg:flex lg:min-h-0 lg:flex-1 lg:flex-col">
+                      <div className="shrink-0">
                         <h3 className="mb-2 flex items-center justify-between gap-2 text-[11px] font-bold uppercase tracking-widest text-brand-muted">
                           <span>Capas</span>
                           <span
@@ -507,6 +474,43 @@ export function EditorSection() {
                             {layerCount}/{MAX_LAYERS}
                           </span>
                         </h3>
+                        <div className="space-y-2">
+                          <div className="grid grid-cols-2 gap-2">
+                            <LogoUploader
+                              onAdd={(input) => {
+                                setLayerLimitNotice(false)
+                                editor.addImageLayer(input)
+                              }}
+                              remaining={Math.max(0, MAX_LAYERS - layerCount)}
+                              onLimitReached={() => setLayerLimitNotice(true)}
+                            />
+                            <button
+                              type="button"
+                              onClick={() => {
+                                if (atLayerLimit) {
+                                  setLayerLimitNotice(true)
+                                  return
+                                }
+                                setLayerLimitNotice(false)
+                                editor.addTextLayer()
+                              }}
+                              className="rounded-lg border border-brand-line px-3 py-2.5 text-xs font-semibold text-brand-light transition hover:border-brand-cyan hover:text-brand-cyan"
+                            >
+                              + Agregar texto
+                            </button>
+                          </div>
+                          {atLayerLimit && layerLimitNotice && (
+                            <p role="alert" className="text-[11px] leading-snug text-brand-pink">
+                              Llegaste al límite de {MAX_LAYERS} capas. Eliminá alguna para poder
+                              agregar otra.
+                            </p>
+                          )}
+                          <p className="text-[10px] leading-snug text-brand-muted">
+                            Un PNG con fondo transparente da el mejor resultado.
+                          </p>
+                        </div>
+                      </div>
+                      <div className="trama-scroll mt-3 min-h-0 lg:flex-1 lg:overflow-y-auto">
                         <LayersPanel
                           layers={editor.layers}
                           selectedId={editor.selectedId}

@@ -24,6 +24,8 @@ const catalogIdFrom = (productId: string): string | null =>
  */
 export const MAX_LOCAL_PRODUCTS = 2
 
+export type EditorPanel = 'prendas' | 'capas'
+
 type EditorProductsContextValue = {
   /** Prendas oficiales del editor + las que el visitante trajo desde el catálogo. */
   products: ProductView[]
@@ -35,6 +37,9 @@ type EditorProductsContextValue = {
   /** Diseño guardado que se está editando; se suelta al cambiar de prenda. */
   activeDesignId: string | null
   setActiveDesignId: (designId: string | null) => void
+  /** Pestaña activa del panel de prendas/capas. */
+  panel: EditorPanel
+  setPanel: (panel: EditorPanel) => void
   select: (productId: string) => void
   /** Suma una foto del catálogo como prenda editable y la deja seleccionada. */
   addFromCatalog: (item: CatalogItem) => Promise<ProductView>
@@ -58,6 +63,7 @@ export function EditorProductsProvider({ children }: { children: ReactNode }) {
     return autosave && autosave.layers.length > 0 ? autosave.productId : ''
   })
   const [activeDesignId, setActiveDesignId] = useState<string | null>(null)
+  const [panel, setPanel] = useState<EditorPanel>('prendas')
 
   const products = useMemo(
     () => [...content.editor.products, ...localProducts],
@@ -110,7 +116,11 @@ export function EditorProductsProvider({ children }: { children: ReactNode }) {
   )
 
   const addFromCatalog = useCallback(
-    (item: CatalogItem) => addProduct(item, true),
+    async (item: CatalogItem) => {
+      const product = await addProduct(item, true)
+      setPanel('capas')
+      return product
+    },
     [addProduct],
   )
 
@@ -146,6 +156,8 @@ export function EditorProductsProvider({ children }: { children: ReactNode }) {
       localProducts,
       activeDesignId,
       setActiveDesignId,
+      panel,
+      setPanel,
       select,
       addFromCatalog,
       selectById,
@@ -155,6 +167,7 @@ export function EditorProductsProvider({ children }: { children: ReactNode }) {
       selectedId,
       localProducts,
       activeDesignId,
+      panel,
       select,
       addFromCatalog,
       selectById,

@@ -123,7 +123,7 @@ export function SavedDesigns({
   return (
     <div
       id="mis-disenos"
-      className={`mt-8 scroll-mt-20 rounded-lg border p-4 transition ${
+      className={`mt-8 scroll-mt-20 scroll-mb-6 rounded-lg border p-4 transition ${
         highlight
           ? 'border-brand-cyan bg-brand-cyan/5 ring-2 ring-brand-cyan/70'
           : 'border-brand-line bg-brand-surface'

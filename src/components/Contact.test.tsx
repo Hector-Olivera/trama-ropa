@@ -72,6 +72,7 @@ describe('Contact', () => {
     expect(url).toBe('https://api.web3forms.com/submit')
     expect(init?.method).toBe('POST')
     expect(init?.body).toContain('20 remeras')
+    expect(JSON.parse(init?.body as string).access_key).toBe('test-access-key')
 
     const status = await screen.findByRole('status')
     expect(status.textContent).toContain('Mensaje Enviado')

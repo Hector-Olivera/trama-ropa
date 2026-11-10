@@ -13,7 +13,7 @@ export default defineConfig({
       VITE_SUPABASE_URL: '',
       VITE_SUPABASE_ANON_KEY: '',
       VITE_ADMIN_EMAIL: '',
-      VITE_CONTACT_ACCESS_KEY: '',
+      VITE_CONTACT_ACCESS_KEY: 'test-access-key',
     },
   },
 })

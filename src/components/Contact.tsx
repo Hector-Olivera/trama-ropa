@@ -1,4 +1,5 @@
 import { useContent } from '../content/ContentProvider'
+import { CONTACT_ACCESS_KEY } from '../lib/env'
 import { RichTitle } from './RichTitle'
 import { useDesignAttachment } from './DesignAttachment'
 import { useEffect, useRef, useState } from 'react'
@@ -17,7 +18,6 @@ export function Contact() {
   const [err, setErr] = useState<string | null>(null)
   const [toast, setToast] = useState(false)
   const toastTimer = useRef<number | null>(null)
-  const accessKey = import.meta.env.VITE_CONTACT_ACCESS_KEY
 
   useEffect(
     () => () => {
@@ -29,6 +29,10 @@ export function Contact() {
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault()
     if (sending || sent) return
+    if (!CONTACT_ACCESS_KEY) {
+      setErr('El formulario no está configurado. Probá de nuevo o escribinos por WhatsApp.')
+      return
+    }
     setSending(true)
     setErr(null)
     setToast(false)
@@ -152,7 +156,7 @@ export function Contact() {
         >
           <h3 className="text-sm font-bold uppercase tracking-wide">{contact.formTitle}</h3>
 
-          <input type="hidden" name="access_key" value={accessKey} />
+          <input type="hidden" name="access_key" value={CONTACT_ACCESS_KEY} />
           <input type="hidden" name="subject" value="Consulta desde Trama" />
           <input type="hidden" name="from_name" value="Trama" />
           <input type="checkbox" name="botcheck" className="hidden" style={{ display: 'none' }} />

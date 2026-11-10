@@ -12,6 +12,8 @@
 
   --font-display: 'Arial Black', 'Arial Black', 'Helvetica Neue', Arial, sans-serif;
   --font-sans: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+
+  --nav-height: 60px;
 }
 
 @layer base {

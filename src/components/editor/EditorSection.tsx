@@ -116,10 +116,10 @@ export function EditorSection() {
     () =>
       computeCanvasMetrics(
         { width: product?.width ?? 1, height: product?.height ?? 1 },
-        { width: shellSize.width, height: CANVAS_HEIGHT },
+        { width: shellSize.width, height: shellSize.height || CANVAS_HEIGHT },
         zoom,
       ),
-    [shellSize.width, product?.width, product?.height, zoom],
+    [shellSize.width, shellSize.height, product?.width, product?.height, zoom],
   )
 
   const handleCommit = useCallback(
@@ -384,29 +384,32 @@ export function EditorSection() {
   }
 
   return (
-    <section id="editor" className="relative scroll-mt-20 border-t border-brand-line py-10 md:py-16">
+    <section
+      id="editor"
+      className="relative scroll-mt-20 border-t border-brand-line py-10 md:py-16 lg:scroll-mt-[var(--nav-height)] lg:pt-0"
+    >
       <div className="mx-auto max-w-7xl px-4">
-        <header className="mb-8">
-          <p className="mb-2 text-xs font-bold uppercase tracking-widest text-brand-cyan">
-            {content.editor.eyebrow}
-          </p>
-          <h2 className="font-display text-3xl uppercase tracking-tight sm:text-4xl">
-            <RichTitle value={content.editor.title} />
-          </h2>
-          <p className="mt-2 max-w-2xl text-sm text-brand-muted">{content.editor.subtitle}</p>
-        </header>
-
-        {!product ? (
-          <div className="rounded-lg border border-dashed border-brand-line bg-brand-surface p-8 text-center">
-            <p className="text-sm text-brand-muted">
-              Todavía no hay prendas cargadas en el editor. Agregalas desde el panel de
-              administración.
+        <div className="lg:flex lg:h-[calc(100dvh-var(--nav-height))] lg:flex-col">
+          <header className="mb-8 lg:mb-4 lg:shrink-0">
+            <p className="mb-2 text-xs font-bold uppercase tracking-widest text-brand-cyan">
+              {content.editor.eyebrow}
             </p>
-          </div>
-        ) : (
-          <>
-            <div className="grid gap-4 lg:grid-cols-[250px_minmax(0,1fr)_260px]">
-              <div className="min-w-0 space-y-5 rounded-lg border border-brand-line bg-brand-surface p-3">
+            <h2 className="font-display text-3xl uppercase tracking-tight sm:text-4xl">
+              <RichTitle value={content.editor.title} />
+            </h2>
+            <p className="mt-2 max-w-2xl text-sm text-brand-muted">{content.editor.subtitle}</p>
+          </header>
+
+          {!product ? (
+            <div className="rounded-lg border border-dashed border-brand-line bg-brand-surface p-8 text-center">
+              <p className="text-sm text-brand-muted">
+                Todavía no hay prendas cargadas en el editor. Agregalas desde el panel de
+                administración.
+              </p>
+            </div>
+          ) : (
+            <div className="grid gap-4 lg:min-h-0 lg:flex-1 lg:grid-cols-[250px_minmax(0,1fr)_260px]">
+              <div className="trama-scroll min-w-0 space-y-5 rounded-lg border border-brand-line bg-brand-surface p-3 lg:min-h-0 lg:overflow-y-auto">
                 <ProductPicker
                   products={products}
                   productId={productId}
@@ -458,7 +461,7 @@ export function EditorSection() {
                 </div>
               </div>
 
-              <div className="min-w-0 space-y-3">
+              <div className="min-w-0 space-y-3 lg:flex lg:min-h-0 lg:flex-col">
                 <EditorToolbar
                   canUndo={editor.canUndo}
                   canRedo={editor.canRedo}
@@ -475,11 +478,10 @@ export function EditorSection() {
                   isSaved={isCurrentSaved}
                 />
 
-                <div className="relative">
+                <div className="relative lg:min-h-0 lg:flex-1">
                   <div
                     ref={shellRef}
-                    style={{ height: CANVAS_HEIGHT }}
-                    className={`trama-scroll overflow-auto ${zoom > 1 ? 'cursor-grab active:cursor-grabbing' : ''}`}
+                    className={`trama-scroll h-[640px] overflow-auto lg:h-full ${zoom > 1 ? 'cursor-grab active:cursor-grabbing' : ''}`}
                   >
                     <EditorCanvas
                       product={product}
@@ -506,7 +508,7 @@ export function EditorSection() {
                 </p>
               </div>
 
-              <div className="min-w-0 space-y-4 rounded-lg border border-brand-line bg-brand-surface p-3">
+              <div className="trama-scroll min-w-0 space-y-4 rounded-lg border border-brand-line bg-brand-surface p-3 lg:min-h-0 lg:overflow-y-auto">
                 <div>
                   <h3 className="mb-2 flex items-center justify-between gap-2 text-[11px] font-bold uppercase tracking-widest text-brand-muted">
                     <span>Capas</span>
@@ -532,27 +534,29 @@ export function EditorSection() {
                 </div>
               </div>
             </div>
+          )}
+        </div>
 
-            <SavedDesigns
-              versions={versions}
-              name={designName}
-              saveState={saveState}
-              highlight={highlightSaved}
-              activeId={activeDesignId}
-              savingAsNew={savingAsNew}
-              newName={newName}
-              savedCount={savedCount}
-              maxSaved={MAX_SAVED_DESIGNS}
-              limitNotice={designLimitNotice}
-              canSaveChanges={canSaveChanges}
-              onNewNameChange={setNewName}
-              onSaveChanges={handleSaveChanges}
-              onSaveAsNew={handleSaveAsNew}
-              onCancelNew={handleCancelNew}
-              onLoad={handleLoad}
-              onDelete={handleDelete}
-            />
-          </>
+        {product && (
+          <SavedDesigns
+            versions={versions}
+            name={designName}
+            saveState={saveState}
+            highlight={highlightSaved}
+            activeId={activeDesignId}
+            savingAsNew={savingAsNew}
+            newName={newName}
+            savedCount={savedCount}
+            maxSaved={MAX_SAVED_DESIGNS}
+            limitNotice={designLimitNotice}
+            canSaveChanges={canSaveChanges}
+            onNewNameChange={setNewName}
+            onSaveChanges={handleSaveChanges}
+            onSaveAsNew={handleSaveAsNew}
+            onCancelNew={handleCancelNew}
+            onLoad={handleLoad}
+            onDelete={handleDelete}
+          />
         )}
       </div>
     </section>

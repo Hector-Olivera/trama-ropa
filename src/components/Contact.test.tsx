@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { Contact } from './Contact'
 import { ContentProvider } from '../content/ContentProvider'
 import { DesignAttachmentContext, DesignAttachmentProvider } from './DesignAttachment'
@@ -9,6 +9,7 @@ import type { DesignAttachmentValue } from './DesignAttachment'
 afterEach(() => {
   cleanup()
   vi.unstubAllGlobals()
+  vi.restoreAllMocks()
 })
 
 function attachmentValue(overrides: Partial<DesignAttachmentValue> = {}): DesignAttachmentValue {
@@ -72,8 +73,35 @@ describe('Contact', () => {
     expect(init?.method).toBe('POST')
     expect(init?.body).toContain('20 remeras')
 
-    const alert = await screen.findByRole('alert')
-    expect(alert.textContent).toContain('¡Gracias!')
+    const status = await screen.findByRole('status')
+    expect(status.textContent).toContain('Mensaje Enviado')
+    expect(status.textContent).toContain('Nos comunicaremos a la brevedad')
+    expect(screen.queryByText(/¡Gracias!/)).toBeNull()
+  })
+
+  it('oculta el cartel de éxito a los 4 segundos', async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      json: async () => ({ success: true }),
+    } as unknown as Response)
+    vi.stubGlobal('fetch', fetchMock)
+    const timeoutSpy = vi.spyOn(window, 'setTimeout')
+    renderContact()
+
+    await fillForm('Consulta')
+
+    fireEvent.click(screen.getByRole('button', { name: 'Enviar consulta' }))
+
+    expect(await screen.findByRole('status')).toBeTruthy()
+    const hide = timeoutSpy.mock.calls.find(([, delay]) => delay === 4000)?.[0] as
+      | (() => void)
+      | undefined
+    expect(hide).toBeTruthy()
+
+    act(() => {
+      hide?.()
+    })
+
+    expect(screen.queryByRole('status')).toBeNull()
   })
 
   it('muestra un error si el envío falla', async () => {
@@ -88,6 +116,7 @@ describe('Contact', () => {
 
     const alert = await screen.findByRole('alert')
     expect(alert.textContent).toContain('No se pudo enviar')
+    expect(screen.queryByRole('status')).toBeNull()
   })
 
   it('muestra el diseño adjunto con su enlace y lo puede quitar', async () => {

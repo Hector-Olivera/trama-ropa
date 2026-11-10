@@ -56,12 +56,16 @@ cambia, se reescribe acá. `AGENTS.md` tiene las reglas de trabajo y los comando
 - **Layout del editor**: el workspace mide `calc(100dvh - var(--nav-height))` (token
   `--nav-height: 60px` en `index.css`) y el ancla usa `scroll-mt` igual al nav; "Mis diseños" queda
   debajo. En `lg` es una grilla **30/70** (`minmax(0,3fr)` / `minmax(0,7fr)`): izquierda = header +
-  pestañas **Prendas/Capas** (`role="tablist"`/`tab`/`tabpanel`) con el panel scrolleable y la
-  línea de ayuda al pie; derecha = `EditorToolbar` + lienzo flexible (`h-[640px] lg:h-full`) con
-  todo el alto restante. El contenido de cada pestaña es el que ya existía (Prendas incluye
-  picker/uploader; Capas incluye contador y `LayersPanel`); sólo se monta la activa. Las métricas
-  usan el **alto medido** del shell (`useElementSize`) en vez de la constante fija. En mobile el
-  orden es **título → lienzo → pestañas/panel** (`order-*`), con lienzo de 640px.
+  pestañas **Prendas/Capas** (`role="tablist"`/`tab`/`tabpanel`) y la línea de ayuda al pie;
+  derecha = `EditorToolbar` + lienzo flexible (`h-[640px] lg:h-full`) con todo el alto restante.
+  Prendas sólo tiene el `ProductPicker` (con scroll propio); **Capas** tiene el contador `n/12`,
+  los botones **+ Subir logo** / **+ Agregar texto** (con aviso de tope y nota PNG) **fijos arriba**
+  y sólo la lista de `LayersPanel` scrollea (`lg:flex-1 lg:min-h-0 lg:overflow-y-auto`). Sólo se
+  monta la pestaña activa. La pestaña vive en `EditorProducts` (`panel`/`setPanel`) y pasa a
+  **Capas** al traer una prenda del catálogo y al cargar un diseño guardado; elegir prenda en
+  Prendas no la cambia. Las métricas usan el **alto medido** del shell (`useElementSize`) en vez
+  de la constante fija. En mobile el orden es **título → lienzo → pestañas/panel** (`order-*`),
+  con lienzo de 640px.
 - **Barra del editor** (`EditorToolbar`): una sola línea con scroll horizontal interno. Los
   carteles (`limit` / `save-first` / `limit-save` / `attached`) se dibujan con
   `position: fixed` anclados al rect del botón: un `absolute` dentro de un contenedor con
@@ -140,7 +144,9 @@ cambia, se reescribe acá. `AGENTS.md` tiene las reglas de trabajo y los comando
   arriba del botón** ("Cambios guardados" para "Guardar cambios", "Diseño guardado" para
   "Guardar como nuevo"), calculado con el rect del botón (patrón de `EditorToolbar`), con
   `role="status"` y descarte por scroll/pointerdown; el timer vive en un ref y se limpia al
-  desmontar. "Guardar cambios" tiene feedback al presionar (`active:scale-[0.97]` + tinte cyan) y
+  desmontar. El **Guardar** de la barra scrollea con `scrollToId('mis-disenos', 'end')` (más
+  `scroll-mb-6`) para dejar la tarjeta al pie de la pantalla, no arriba. "Guardar cambios" tiene
+  feedback al presionar (`active:scale-[0.97]` + tinte cyan) y
   queda con borde/texto cyan mientras se ve el cartel. En mobile las acciones van en **una sola
   fila** (`flex-nowrap` + `w-full`): botones con `text-[10px]`/`px-2` y el input `min-w-0 flex-1`
   se achica para entrar; desde `sm` vuelven al tamaño y alineación de escritorio.

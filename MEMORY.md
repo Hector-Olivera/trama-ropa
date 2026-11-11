@@ -79,14 +79,16 @@ cambia, se reescribe acá. `AGENTS.md` tiene las reglas de trabajo y los comando
   en una fila con **scroll horizontal sin barra visible** (clase `.trama-strip`: `scrollbar-width:
   none` + `::-webkit-scrollbar { display: none }`), snap, y **flechas `‹ ›`** translúcidas
   (círculos `bg-brand-black/70 backdrop-blur`, `opacity-70`, hover cyan) que se **ocultan en cada
-  extremo** y sólo aparece si hay overflow (paso de 120 px = una tarjeta). En **desktop** queda la
-  grilla de 2 columnas **siempre como antes** (`hidden lg:grid`, orden original). El carrusel
-  muestra las prendas **en orden inverso** y arranca scrolleado a la **primera que sumó el
-  visitante** (`userAddedIds`, memoizado en `EditorSection` con `useMemo` para que el efecto no se
-  recue en cada render). Las métricas de las flechas salen de `onScroll` + `resize` +
+  extremo** y sólo aparece si hay overflow (paso de 120 px = una tarjeta). En **desktop** la grilla
+  de 2 columnas muestra arriba a las prendas **agregadas** (la última subida primero) y abajo a las
+  **del admin, siempre fijas y en su orden**. El carrusel mobile usa el mismo orden
+  (`[...agregadas, ...defaults]`) y arranca scrolleado a la primera agregada (`userAddedIds`,
+  memoizado en `EditorSection` con `useMemo` para que el efecto no se recree en cada render). Todas
+  las tarjetas son `w-full` (mismo ancho aunque el nombre sea largo) y el label va `truncate` con
+  `title` para verlo completo. Las métricas de las flechas salen de `onScroll` + `resize` +
   `requestAnimationFrame` (callbacks: nunca setState sincróno en el body de un effect).
-- **Pitfall `min-w-0` (mobile)**: `EditorSection` apila los 3 paneles en un `grid` de **una sola
-  columna compartida** (`grid gap-4 lg:grid-cols-[250px_minmax(0,1fr)_260px]`). Un item sin
+- **Pitfall `min-w-0` (mobile)**: `EditorSection` usa una **grilla compartida**
+  (`grid gap-4 lg:grid-cols-[minmax(0,3fr)_minmax(0,7fr)]`). Un item sin
   `min-w-0` hereda `min-width: auto` (min-content de su contenido): el strip del carrusel (fila
   completa de tarjetas `shrink-0 w-28`) **ensanchaba la columna y toda la página** y, al no haber
   overflow interno, `measure()` apagaba las flechas y el scroll. El `overflow-x-auto` del strip
@@ -110,8 +112,8 @@ cambia, se reescribe acá. `AGENTS.md` tiene las reglas de trabajo y los comando
   sin medir alturas en effects (regla de `react-hooks` v7). Cierra con Escape, `pointerdown`
   afuera, scroll de página y resize. Seleccionar una capa (nombre o pincel) la hace **visible**
   automáticamente. `Supr`/`Backspace` **oculta** la capa seleccionada (ya no borra); borrar es
-  sólo con la `×`, que abre un `ConfirmDeleteToast` propio (estilo del cartel de Contacto, abajo
-  al centro) con Cancelar/Eliminar; ya no usa `window.confirm`.
+  sólo con la `×`, que abre un `ConfirmDeleteToast` propio (estilo del cartel de Contacto, **al
+  centro de la pantalla**) con Cancelar/Eliminar; ya no usa `window.confirm`.
   En mobile la fila va en **una sola línea** (`[miniatura] [nombre truncado] [pincel] [texto] [×]`)
   con botones compactos (`text-[8px]` → `lg:text-[9px]`, `×` en `w-4`); _no_ usar `flex-wrap` en
   dos líneas: desalineaba la miniatura con los botones y sumaba altura.
@@ -143,11 +145,10 @@ cambia, se reescribe acá. `AGENTS.md` tiene las reglas de trabajo y los comando
   `n/12` cyan al llegar y aviso rosa al intentar crear el 13.º (el botón sigue clickeable, como
   en Capas). Borrar el activo limpia el resaltado y abre el mismo **`ConfirmDeleteToast`** que
   Capas (título propio y nombre del diseño; ya no usa `window.confirm`). Al guardar,
-  `SavedDesigns` muestra un **cartel fijo 3 s
-  arriba del botón** ("Cambios guardados" para "Guardar cambios", "Diseño guardado" para
-  "Guardar como nuevo"), calculado con el rect del botón (patrón de `EditorToolbar`), con
-  `role="status"` y descarte por scroll/pointerdown; el timer vive en un ref y se limpia al
-  desmontar. El **Guardar** de la barra scrollea con `scrollToId('mis-disenos', 'end')` (más
+  `SavedDesigns` muestra un **cartel fijo 3 s al centro de la pantalla** ("Cambios guardados"
+  para "Guardar cambios", "Diseño guardado" para "Guardar como nuevo"), con `role="status"` y
+  descarte por scroll/pointerdown; ya no se posiciona con el rect del botón. El timer vive en un
+  ref y se limpia al desmontar. El **Guardar** de la barra scrollea con `scrollToId('mis-disenos', 'end')` (más
   `scroll-mb-6`) para dejar la tarjeta al pie de la pantalla, no arriba. "Guardar cambios" tiene
   feedback al presionar (`active:scale-[0.97]` + tinte cyan) y
   queda con borde/texto cyan mientras se ve el cartel. En mobile las acciones van en **una sola
@@ -176,8 +177,8 @@ cambia, se reescribe acá. `AGENTS.md` tiene las reglas de trabajo y los comando
   bug).
   Los diseños adjuntados viajan como **link firmado** en el cuerpo del mensaje; al enviar con
   éxito se limpian (`clear()` del contexto, revoca las vistas previas).
-- **Cartel de éxito**: al enviar aparece un aviso fijo abajo al centro (4 s, `role="status"`,
-  borde cyan/fondo negro, `bottom-20 sm:bottom-6` para no tapar el botón flotante) con
+- **Cartel de éxito**: al enviar aparece un aviso fijo **al centro de la pantalla** (4 s,
+  `role="status"`, borde cyan/fondo negro, centrado con `top-1/2 left-1/2` y translate) con
   "Mensaje Enviado" / "Nos comunicaremos a la brevedad". Reemplaza el mensaje inline
   "¡Gracias!". El timer vive en un ref y se limpia al desmontar y al iniciar otro envío.
   El botón **nunca queda en "Enviado"**: sólo alterna `Enviando...` / `Enviar consulta` y se

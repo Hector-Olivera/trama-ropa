@@ -48,7 +48,8 @@ cambia, se reescribe acá. `AGENTS.md` tiene las reglas de trabajo y los comando
   (estado `zoomFor` con el `productId` en `EditorSection`, así también cubre el alta desde el
   catálogo sin tocar el provider). Entra en la firma del autosave y en `Design.zoom`
   (opcional: los diseños viejos abren al 100%), así que cargar una versión restaura la vista.
-  Las scrollbars del lienzo usan la clase `trama-scroll` (`index.css`).
+  Las scrollbars del lienzo usan la clase `trama-scroll` (`index.css`). El control flotante de
+  zoom está **abajo a la izquierda** del lienzo (`bottom-4 left-4`).
 - **Móvil**: el menú de la barra es una hamburguesa (`Nav`) que lista **`nav.links`** del
   contenido (no hardcodear atajos: se editan en el admin); cierra al navegar y con Escape.
   Las secciones usan `py-10 md:py-16` (el desktop conserva el espaciado grande) y las 4 fotos
@@ -109,7 +110,8 @@ cambia, se reescribe acá. `AGENTS.md` tiene las reglas de trabajo y los comando
   sin medir alturas en effects (regla de `react-hooks` v7). Cierra con Escape, `pointerdown`
   afuera, scroll de página y resize. Seleccionar una capa (nombre o pincel) la hace **visible**
   automáticamente. `Supr`/`Backspace` **oculta** la capa seleccionada (ya no borra); borrar es
-  sólo con la `×`, que pide `window.confirm('¿Eliminar esta capa?')` (mismo patrón que el admin).
+  sólo con la `×`, que abre un `ConfirmDeleteToast` propio (estilo del cartel de Contacto, abajo
+  al centro) con Cancelar/Eliminar; ya no usa `window.confirm`.
   En mobile la fila va en **una sola línea** (`[miniatura] [nombre truncado] [pincel] [texto] [×]`)
   con botones compactos (`text-[8px]` → `lg:text-[9px]`, `×` en `w-4`); _no_ usar `flex-wrap` en
   dos líneas: desalineaba la miniatura con los botones y sumaba altura.
@@ -139,8 +141,9 @@ cambia, se reescribe acá. `AGENTS.md` tiene las reglas de trabajo y los comando
   fuera del bloque de acciones y Enter (confirmar) lo manejan; `autosave` sigue aparte y
   `newName` no entra en la firma. Tope `MAX_SAVED_DESIGNS = 12` (en `storage.ts`): contador
   `n/12` cyan al llegar y aviso rosa al intentar crear el 13.º (el botón sigue clickeable, como
-  en Capas). Borrar el activo limpia el resaltado y pide **`window.confirm('¿Eliminar este
-  diseño?')`** (mismo patrón que Capas). Al guardar, `SavedDesigns` muestra un **cartel fijo 3 s
+  en Capas). Borrar el activo limpia el resaltado y abre el mismo **`ConfirmDeleteToast`** que
+  Capas (título propio y nombre del diseño; ya no usa `window.confirm`). Al guardar,
+  `SavedDesigns` muestra un **cartel fijo 3 s
   arriba del botón** ("Cambios guardados" para "Guardar cambios", "Diseño guardado" para
   "Guardar como nuevo"), calculado con el rect del botón (patrón de `EditorToolbar`), con
   `role="status"` y descarte por scroll/pointerdown; el timer vive en un ref y se limpia al
@@ -177,6 +180,8 @@ cambia, se reescribe acá. `AGENTS.md` tiene las reglas de trabajo y los comando
   borde cyan/fondo negro, `bottom-20 sm:bottom-6` para no tapar el botón flotante) con
   "Mensaje Enviado" / "Nos comunicaremos a la brevedad". Reemplaza el mensaje inline
   "¡Gracias!". El timer vive en un ref y se limpia al desmontar y al iniciar otro envío.
+  El botón **nunca queda en "Enviado"**: sólo alterna `Enviando...` / `Enviar consulta` y se
+  puede volver a enviar enseguida (el éxito lo comunica únicamente el cartel).
 - **Botón flotante** (`FloatingAttachment`, montado en `Landing` junto a los providers):
   aparece únicamente mientras haya diseños adjuntados. Es un **flecha SVG con el texto
   adentro** (punta abajo "Enviar Diseño", punta arriba "Volver"; `fill` negro/65% +

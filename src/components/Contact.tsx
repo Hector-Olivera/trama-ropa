@@ -14,7 +14,6 @@ export function Contact() {
   const [email, setEmail] = useState('')
   const [message, setMessage] = useState('')
   const [sending, setSending] = useState(false)
-  const [sent, setSent] = useState(false)
   const [err, setErr] = useState<string | null>(null)
   const [toast, setToast] = useState(false)
   const toastTimer = useRef<number | null>(null)
@@ -28,7 +27,7 @@ export function Contact() {
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault()
-    if (sending || sent) return
+    if (sending) return
     if (!CONTACT_ACCESS_KEY) {
       setErr('El formulario no está configurado. Probá de nuevo o escribinos por WhatsApp.')
       return
@@ -57,7 +56,6 @@ export function Contact() {
       })
       const data = await res.json()
       if (data.success) {
-        setSent(true)
         setName('')
         setEmail('')
         setMessage('')
@@ -253,7 +251,7 @@ export function Contact() {
             disabled={sending}
             className="w-full rounded-md bg-brand-cyan px-4 py-2.5 text-sm font-bold text-brand-black transition hover:bg-brand-pink hover:text-white disabled:opacity-50"
           >
-            {sending ? 'Enviando...' : sent ? 'Enviado' : 'Enviar consulta'}
+            {sending ? 'Enviando...' : 'Enviar consulta'}
           </button>
 
           {err && (

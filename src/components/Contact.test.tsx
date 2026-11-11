@@ -78,6 +78,26 @@ describe('Contact', () => {
     expect(status.textContent).toContain('Mensaje Enviado')
     expect(status.textContent).toContain('Nos comunicaremos a la brevedad')
     expect(screen.queryByText(/¡Gracias!/)).toBeNull()
+    expect(screen.getByRole('button', { name: 'Enviar consulta' })).toBeTruthy()
+    expect(screen.queryByRole('button', { name: 'Enviado' })).toBeNull()
+  })
+
+  it('permite enviar otra consulta después del éxito', async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      json: async () => ({ success: true }),
+    } as unknown as Response)
+    vi.stubGlobal('fetch', fetchMock)
+
+    renderContact()
+
+    await fillForm('Primera consulta')
+    fireEvent.click(screen.getByRole('button', { name: 'Enviar consulta' }))
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1))
+    await screen.findByRole('status')
+
+    await fillForm('Segunda consulta')
+    fireEvent.click(screen.getByRole('button', { name: 'Enviar consulta' }))
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(2))
   })
 
   it('oculta el cartel de éxito a los 4 segundos', async () => {

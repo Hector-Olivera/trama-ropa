@@ -1,6 +1,7 @@
 import { useCallback, useState } from 'react'
 import { DrawableImage } from './DrawableImage'
 import type { Layer } from '../../types'
+import { ConfirmDeleteToast } from './ConfirmDeleteToast'
 import { LayerPropertiesPopover, type PopoverAnchorRect } from './LayerPropertiesPopover'
 
 type Props = {
@@ -27,6 +28,7 @@ export function LayersPanel({
   onRemove,
 }: Props) {
   const [menu, setMenu] = useState<OpenMenu | null>(null)
+  const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null)
   const closeMenu = useCallback(() => setMenu(null), [])
 
   if (layers.length === 0) {
@@ -38,6 +40,9 @@ export function LayersPanel({
   }
 
   const openLayer = menu ? layers.find((layer) => layer.id === menu.id) : undefined
+  const pendingDelete = pendingDeleteId
+    ? layers.find((layer) => layer.id === pendingDeleteId)
+    : undefined
 
   const openProperties = (layerId: string, button: HTMLButtonElement) => {
     const rect = button.getBoundingClientRect()
@@ -127,7 +132,8 @@ export function LayersPanel({
                   <IconButton
                     label="Eliminar capa"
                     onClick={() => {
-                      if (window.confirm('¿Eliminar esta capa?')) onRemove(layer.id)
+                      setMenu(null)
+                      setPendingDeleteId(layer.id)
                     }}
                     danger
                   >
@@ -147,6 +153,18 @@ export function LayersPanel({
           anchorRect={menu.anchorRect}
           onChange={(patch) => onChange(openLayer.id, patch)}
           onClose={closeMenu}
+        />
+      )}
+
+      {pendingDelete && (
+        <ConfirmDeleteToast
+          title="¿Eliminar esta capa?"
+          description="La capa se va a quitar del diseño."
+          onCancel={() => setPendingDeleteId(null)}
+          onConfirm={() => {
+            onRemove(pendingDelete.id)
+            setPendingDeleteId(null)
+          }}
         />
       )}
     </>

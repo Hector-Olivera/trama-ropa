@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import type { Design } from '../../types'
+import { ConfirmDeleteToast } from './ConfirmDeleteToast'
 
 type NoticeKind = 'changes' | 'new'
 
@@ -52,6 +53,7 @@ export function SavedDesigns({
   const saveAsNewRef = useRef<HTMLButtonElement>(null)
   const noticeTimer = useRef<number | null>(null)
   const [notice, setNotice] = useState<Notice | null>(null)
+  const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null)
 
   useEffect(() => {
     if (!savingAsNew) return
@@ -119,6 +121,9 @@ export function SavedDesigns({
   }
 
   const atLimit = savedCount >= maxSaved
+  const pendingDelete = pendingDeleteId
+    ? versions.find((design) => design.id === pendingDeleteId)
+    : undefined
 
   return (
     <div
@@ -253,9 +258,7 @@ export function SavedDesigns({
                 </button>
                 <button
                   type="button"
-                  onClick={() => {
-                    if (window.confirm('¿Eliminar este diseño?')) onDelete(design.id)
-                  }}
+                  onClick={() => setPendingDeleteId(design.id)}
                   aria-label={`Borrar ${design.name}`}
                   className="w-5 rounded text-center text-brand-muted transition hover:bg-brand-pink/20 hover:text-brand-pink"
                 >
@@ -265,6 +268,18 @@ export function SavedDesigns({
             )
           })}
         </ul>
+      )}
+
+      {pendingDelete && (
+        <ConfirmDeleteToast
+          title="¿Eliminar este diseño?"
+          description={`"${pendingDelete.name}" se va a borrar de tus diseños.`}
+          onCancel={() => setPendingDeleteId(null)}
+          onConfirm={() => {
+            onDelete(pendingDelete.id)
+            setPendingDeleteId(null)
+          }}
+        />
       )}
 
       {notice && (

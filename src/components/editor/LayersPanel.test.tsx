@@ -152,16 +152,21 @@ describe('LayersPanel', () => {
   })
 
   it('la × pide confirmación y sólo borra si se acepta', () => {
-    const confirm = vi.spyOn(window, 'confirm').mockReturnValue(false)
     const { props } = renderPanel([textLayer])
 
     fireEvent.click(screen.getByRole('button', { name: 'Eliminar capa' }))
-    expect(confirm).toHaveBeenCalledWith('¿Eliminar esta capa?')
+    const dialog = screen.getByRole('alertdialog', { name: '¿Eliminar esta capa?' })
+    expect(within(dialog).getByText('La capa se va a quitar del diseño.')).toBeTruthy()
+
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Cancelar' }))
+    expect(screen.queryByRole('alertdialog')).toBeNull()
     expect(props.onRemove).not.toHaveBeenCalled()
 
-    confirm.mockReturnValue(true)
     fireEvent.click(screen.getByRole('button', { name: 'Eliminar capa' }))
+    const confirmDialog = screen.getByRole('alertdialog', { name: '¿Eliminar esta capa?' })
+    fireEvent.click(within(confirmDialog).getByRole('button', { name: 'Eliminar' }))
     expect(props.onRemove).toHaveBeenCalledWith('txt-1')
+    expect(screen.queryByRole('alertdialog')).toBeNull()
   })
 
   it('el pincel selecciona la capa y abre el desplegable de propiedades', () => {

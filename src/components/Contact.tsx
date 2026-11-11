@@ -273,7 +273,7 @@ export function Contact() {
         <div
           role="status"
           aria-live="polite"
-          className="pointer-events-none fixed bottom-20 left-1/2 z-50 w-[calc(100%-2rem)] max-w-sm -translate-x-1/2 rounded-lg border border-brand-cyan/70 bg-brand-black/95 px-4 py-3 shadow-lg sm:bottom-6"
+          className="pointer-events-none fixed top-1/2 left-1/2 z-50 w-[calc(100%-2rem)] max-w-sm -translate-x-1/2 -translate-y-1/2 rounded-lg border border-brand-cyan/70 bg-brand-black/95 px-4 py-3 shadow-lg"
         >
           <p className="text-sm font-bold text-brand-cyan">Mensaje Enviado</p>
           <p className="mt-1 text-xs text-brand-muted">Nos comunicaremos a la brevedad</p>

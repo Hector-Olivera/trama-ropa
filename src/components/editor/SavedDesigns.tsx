@@ -4,8 +4,6 @@ import { ConfirmDeleteToast } from './ConfirmDeleteToast'
 
 type NoticeKind = 'changes' | 'new'
 
-type Notice = { kind: NoticeKind; bottom: number; right: number }
-
 const NOTICE_DURATION = 3000
 
 type Props = {
@@ -49,10 +47,8 @@ export function SavedDesigns({
 }: Props) {
   const actionsRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
-  const saveChangesRef = useRef<HTMLButtonElement>(null)
-  const saveAsNewRef = useRef<HTMLButtonElement>(null)
   const noticeTimer = useRef<number | null>(null)
-  const [notice, setNotice] = useState<Notice | null>(null)
+  const [notice, setNotice] = useState<NoticeKind | null>(null)
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null)
 
   useEffect(() => {
@@ -93,15 +89,8 @@ export function SavedDesigns({
     [],
   )
 
-  const showNotice = (kind: NoticeKind, element: HTMLElement | null) => {
-    const rect = element?.getBoundingClientRect()
-    if (rect) {
-      setNotice({
-        kind,
-        bottom: window.innerHeight - rect.top + 8,
-        right: window.innerWidth - rect.right,
-      })
-    }
+  const showNotice = (kind: NoticeKind) => {
+    setNotice(kind)
     if (noticeTimer.current !== null) window.clearTimeout(noticeTimer.current)
     noticeTimer.current = window.setTimeout(() => {
       setNotice(null)
@@ -111,13 +100,13 @@ export function SavedDesigns({
 
   const handleSaveChanges = () => {
     onSaveChanges()
-    showNotice('changes', saveChangesRef.current)
+    showNotice('changes')
   }
 
   const handleSaveAsNew = () => {
     const confirming = savingAsNew
     onSaveAsNew()
-    if (confirming) showNotice('new', saveAsNewRef.current)
+    if (confirming) showNotice('new')
   }
 
   const atLimit = savedCount >= maxSaved
@@ -155,12 +144,11 @@ export function SavedDesigns({
           className="flex w-full flex-nowrap items-center gap-1.5 sm:ml-auto sm:w-auto sm:gap-2"
         >
           <button
-            ref={saveChangesRef}
             type="button"
             onClick={handleSaveChanges}
             disabled={!canSaveChanges}
             className={`shrink-0 whitespace-nowrap rounded border px-2 py-1.5 text-[10px] font-semibold transition active:scale-[0.97] active:border-brand-cyan active:bg-brand-cyan/15 active:text-brand-cyan disabled:cursor-not-allowed disabled:opacity-40 sm:px-3 sm:text-xs ${
-              notice?.kind === 'changes'
+              notice === 'changes'
                 ? 'border-brand-cyan text-brand-cyan'
                 : 'border-brand-line text-brand-light enabled:hover:border-brand-cyan enabled:hover:text-brand-cyan'
             }`}
@@ -195,14 +183,13 @@ export function SavedDesigns({
               }`}
             />
             <button
-              ref={saveAsNewRef}
               type="button"
               onClick={handleSaveAsNew}
               aria-pressed={savingAsNew}
               className={`shrink-0 whitespace-nowrap rounded border px-2 py-1.5 text-[10px] font-semibold transition active:scale-[0.97] sm:px-3 sm:text-xs ${
                 savingAsNew
                   ? 'border-brand-cyan bg-brand-cyan text-brand-black hover:bg-brand-cyan/90'
-                  : notice?.kind === 'new'
+                  : notice === 'new'
                     ? 'border-brand-cyan text-brand-cyan'
                     : 'border-brand-line text-brand-light hover:border-brand-cyan hover:text-brand-cyan'
               }`}
@@ -286,10 +273,9 @@ export function SavedDesigns({
         <div
           role="status"
           aria-live="polite"
-          style={{ bottom: notice.bottom, right: notice.right }}
-          className="pointer-events-none fixed z-50 max-w-[min(16rem,calc(100vw-1rem))] rounded border border-brand-cyan/70 bg-brand-black px-2 py-1 text-[10px] font-semibold text-brand-cyan shadow-lg"
+          className="pointer-events-none fixed top-1/2 left-1/2 z-50 max-w-[min(16rem,calc(100vw-1rem))] -translate-x-1/2 -translate-y-1/2 rounded border border-brand-cyan/70 bg-brand-black px-2 py-1 text-[10px] font-semibold text-brand-cyan shadow-lg"
         >
-          {notice.kind === 'changes' ? 'Cambios guardados' : 'Diseño guardado'}
+          {notice === 'changes' ? 'Cambios guardados' : 'Diseño guardado'}
         </div>
       )}
     </div>

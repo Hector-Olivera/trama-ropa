@@ -38,7 +38,7 @@ export function ConfirmDeleteToast({ title, description, onConfirm, onCancel }: 
       role="alertdialog"
       aria-labelledby={titleId}
       aria-describedby={descriptionId}
-      className="fixed bottom-20 left-1/2 z-50 w-[calc(100%-2rem)] max-w-sm -translate-x-1/2 rounded-lg border border-brand-cyan/70 bg-brand-black/95 px-4 py-3 shadow-lg sm:bottom-6"
+      className="fixed top-1/2 left-1/2 z-50 w-[calc(100%-2rem)] max-w-sm -translate-x-1/2 -translate-y-1/2 rounded-lg border border-brand-cyan/70 bg-brand-black/95 px-4 py-3 shadow-lg"
     >
       <p id={titleId} className="text-sm font-bold text-brand-cyan">
         {title}

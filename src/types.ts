@@ -59,7 +59,7 @@ export type TextLayer = LayerBase & {
   text: string
   fontSize: number
   fontFamily: string
-  fontWeight: 400 | 700 | 900
+  fontWeight: 400 | 700
   fontStyle: 'normal' | 'italic'
   fill: string
   align: 'left' | 'center' | 'right'

@@ -5,7 +5,7 @@ import { ZOOM_MIN, clampZoom, computeCanvasMetrics } from '../../lib/canvasMetri
 import { renderDesignBlob } from '../../lib/exportImage'
 import { isSupabaseConfigured } from '../../lib/env'
 import { scrollToId } from '../../lib/scrollToId'
-import { mergeLoadedLayers } from '../../lib/designLayers'
+import { mergeLoadedLayers, normalizeLayerStyles } from '../../lib/designLayers'
 import {
   deleteDesign,
   cleanupBlobs,
@@ -62,7 +62,9 @@ export function EditorSection() {
   // effect seria un setState en render, que la regla react-hooks v7 marca.
   const [boot] = useState(() => {
     const autosave = listDesigns().find((design) => design.id === 'autosave')
-    return autosave && autosave.layers.length > 0 ? autosave : null
+    return autosave && autosave.layers.length > 0
+      ? { ...autosave, layers: normalizeLayerStyles(autosave.layers) }
+      : null
   })
 
   const product: ProductView | undefined = useMemo(
@@ -358,7 +360,7 @@ export function EditorSection() {
     setNewName('')
     setDesignLimitNotice(false)
     setNamedFor({ productId: design.productId, name: design.name })
-    editor.loadLayers(mergeLoadedLayers(editor.layers, design.layers))
+    editor.loadLayers(normalizeLayerStyles(mergeLoadedLayers(editor.layers, design.layers)))
     setZoomFor({ productId: design.productId, value: clampZoom(design.zoom ?? 1) })
     setProductMissing(false)
     setPanel('capas')

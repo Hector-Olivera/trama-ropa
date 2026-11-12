@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 import { act, renderHook } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
+import { ARIAL_FONT_STACK } from './fonts'
 import { MAX_LAYERS, useEditor } from './useEditor'
 
 const imageInput = {
@@ -43,6 +44,19 @@ describe('useEditor', () => {
     })
     expect(added).toBe(false)
     expect(result.current.layers).toHaveLength(MAX_LAYERS)
+  })
+
+  it('crea los textos en Arial Bold', () => {
+    const { result } = renderHook(() => useEditor(1000, 1000))
+
+    act(() => {
+      result.current.addTextLayer()
+    })
+
+    expect(result.current.layers[0]).toMatchObject({
+      fontFamily: ARIAL_FONT_STACK,
+      fontWeight: 700,
+    })
   })
 
   it('nombra la capa de imagen con el archivo y usa "Logo" como fallback', () => {

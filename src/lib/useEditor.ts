@@ -1,5 +1,6 @@
 import { useCallback, useMemo, useState } from 'react'
 import { DEFAULT_FILTERS, type ImageLayer, type Layer, type TextLayer } from '../types'
+import { ARIAL_FONT_STACK } from './fonts'
 import { useHistory } from './useHistory'
 
 const id = () => crypto.randomUUID()
@@ -78,8 +79,8 @@ export function useEditor(
       visible: true,
       locked: false,
       fontSize,
-      fontFamily: 'Arial Black, Arial, sans-serif',
-      fontWeight: 900,
+      fontFamily: ARIAL_FONT_STACK,
+      fontWeight: 700,
       fontStyle: 'normal',
       fill: '#ffffff',
       align: 'center',

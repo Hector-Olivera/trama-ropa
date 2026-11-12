@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { cleanup, fireEvent, render, screen } from '@testing-library/react'
+import { FONT_OPTIONS } from '../../lib/fonts'
 import { LayerPropertiesPopover } from './LayerPropertiesPopover'
 import type { PopoverAnchorRect } from './LayerPropertiesPopover'
 import type { TextLayer } from '../../types'
@@ -59,6 +60,19 @@ describe('LayerPropertiesPopover', () => {
     expect(screen.getByText('Opacidad')).toBeTruthy()
     expect(screen.getByText('Rotación')).toBeTruthy()
     expect(screen.getByText('Capa · Texto')).toBeTruthy()
+  })
+
+  it('permite cambiar la tipografía del texto', () => {
+    const { onChange } = setup()
+    const georgia = FONT_OPTIONS.find((font) => font.id === 'georgia')
+    expect(georgia).toBeDefined()
+    if (!georgia) return
+
+    fireEvent.change(screen.getByLabelText('Tipografía'), {
+      target: { value: georgia.stack },
+    })
+
+    expect(onChange).toHaveBeenCalledWith({ fontFamily: georgia.stack })
   })
 
   it('se abre hacia arriba cuando no hay lugar debajo', () => {

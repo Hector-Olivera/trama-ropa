@@ -55,21 +55,25 @@ const MAX_CACHE_ENTRIES = 48
 const renderCache = new Map<string, HTMLCanvasElement>()
 
 /**
- * Devuelve el canvas ya filtrado, memoizado por (src + filtro).
- * Devolver LA MISMA instancia para la misma clave evita que Konva se
- * redibuje cuando el usuario mueve un slider y vuelve al valor anterior.
+ * Devuelve el canvas ya filtrado y/o espejado, memoizado por
+ * (src + filtro + flips). Devolver LA MISMA instancia para la misma clave evita
+ * que Konva se redibuje cuando el usuario mueve un slider y vuelve al valor
+ * anterior.
  */
-export function getFilteredCanvas(
+export function getRenderedCanvas(
   image: HTMLImageElement,
   src: string,
   filters: FilterState,
+  flipX = false,
+  flipY = false,
 ): HTMLCanvasElement {
-  if (isFilterNeutral(filters)) {
-    // Sin filtros no hay nada que renderizar: Konva dibuja el <img> directo.
-    throw new Error('getFilteredCanvas no debe llamarse con filtros neutros.')
+  if (isFilterNeutral(filters) && !flipX && !flipY) {
+    // Sin filtros ni espejado no hay nada que renderizar: Konva usa el <img>.
+    throw new Error('getRenderedCanvas no debe llamarse sin filtros ni espejado.')
   }
 
-  const key = `${src}::${buildFilterString(filters)}`
+  const filter = buildFilterString(filters)
+  const key = `${src}::${filter}::${flipX ? 'x' : ''}${flipY ? 'y' : ''}`
   const cached = renderCache.get(key)
   if (cached) return cached
 
@@ -80,7 +84,11 @@ export function getFilteredCanvas(
   const ctx = canvas.getContext('2d')
   if (!ctx) throw new Error('Tu navegador no soporta canvas 2D.')
 
-  if (typeof ctx.filter === 'string') ctx.filter = buildFilterString(filters)
+  if (typeof ctx.filter === 'string') ctx.filter = filter
+  if (flipX || flipY) {
+    ctx.translate(flipX ? canvas.width : 0, flipY ? canvas.height : 0)
+    ctx.scale(flipX ? -1 : 1, flipY ? -1 : 1)
+  }
   ctx.drawImage(image, 0, 0)
   if (typeof ctx.filter === 'string') ctx.filter = 'none'
 

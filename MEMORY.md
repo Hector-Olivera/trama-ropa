@@ -27,6 +27,17 @@ cambia, se reescribe acá. `AGENTS.md` tiene las reglas de trabajo y los comando
   `Konva.Filters` + `cache()` (rompe el `Transformer`); texto con `<textarea>` DOM
   (`TextOverlay`), no `Konva.Text`; la prenda base se dibuja con `useLoadedImage` (resuelve el
   `MediaRef`), nunca con el src crudo.
+- **Voltear imágenes**: Konva **no** tiene `flipX`/`flipY` como props. El espejado se
+  pre-renderiza en `getRenderedCanvas` (`lib/imageFilters.ts`) con `translate` + `scale(-1)`,
+  cacheado por `src + filtro + flips`; nunca con `scaleX` negativo en el nodo (rompe el
+  `Transformer` y el export). Sin filtros ni flips, Konva usa el `<img>` directo.
+- **Texto y pesos**: `lib/fonts.ts` define 8 stacks del sistema con nombre real: Arial, Segoe
+  UI, Verdana, Trebuchet MS, Georgia, Times New Roman, Courier New e Impact (sin webfonts: 0 KB
+  extra). El texto nuevo usa **Arial + Bold**. Sólo hay **Normal/Bold**: se quitó Black porque
+  en 6 de las 8 familias el navegador lo renderiza igual que Bold. Konva recibe **`fontStyle`**
+  (`normal` / `bold`, con `italic` antepuesto), no `fontWeight`; `TextOverlay` usa
+  `layer.fontWeight` real y `layer.fontFamily` directo. `normalizeLayerStyles`
+  (`lib/designLayers.ts`) migra autosave/diseños viejos: 900 → 700 y Arial Black → Arial.
 - **Imágenes**: en el documento se guarda la clave `trama:blob:<id>` (nunca un object URL).
   Binarios en IndexedDB; `MediaRef` = path de `public/` o clave de blob; toda `<img>` de
   contenido pasa por `MediaImage`. El GC `cleanupBlobs()` (`lib/storage.ts`) borra lo que no
@@ -145,10 +156,10 @@ cambia, se reescribe acá. `AGENTS.md` tiene las reglas de trabajo y los comando
   `n/12` cyan al llegar y aviso rosa al intentar crear el 13.º (el botón sigue clickeable, como
   en Capas). Borrar el activo limpia el resaltado y abre el mismo **`ConfirmDeleteToast`** que
   Capas (título propio y nombre del diseño; ya no usa `window.confirm`). Al guardar,
-  `SavedDesigns` muestra un **cartel fijo 3 s al centro de la pantalla** ("Cambios guardados"
-  para "Guardar cambios", "Diseño guardado" para "Guardar como nuevo"), con `role="status"` y
-  descarte por scroll/pointerdown; ya no se posiciona con el rect del botón. El timer vive en un
-  ref y se limpia al desmontar. El **Guardar** de la barra scrollea con `scrollToId('mis-disenos', 'end')` (más
+  `SavedDesigns` muestra un **cartel fijo 3 s arriba del botón que lo dispara** ("Cambios
+  guardados" sobre "Guardar cambios", "Diseño guardado" sobre "Guardar como nuevo"), calculado
+  con `getBoundingClientRect()` del ref correspondiente, con `role="status"` y descarte por
+  scroll/pointerdown. El timer vive en un ref y se limpia al desmontar. El **Guardar** de la barra scrollea con `scrollToId('mis-disenos', 'end')` (más
   `scroll-mb-6`) para dejar la tarjeta al pie de la pantalla, no arriba. "Guardar cambios" tiene
   feedback al presionar (`active:scale-[0.97]` + tinte cyan) y
   queda con borde/texto cyan mientras se ve el cartel. En mobile las acciones van en **una sola

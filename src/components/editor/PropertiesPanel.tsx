@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { FONT_OPTIONS } from '../../lib/fonts'
 import { FILTER_PRESETS, applyPreset, filterKey } from '../../lib/imageFilters'
 import { DEFAULT_FILTERS, type ImageLayer, type Layer, type TextLayer } from '../../types'
 
@@ -192,6 +193,7 @@ function ImageControls({ layer, onChange }: { layer: ImageLayer; onChange: Props
 
 function TextControls({ layer, onChange }: { layer: TextLayer; onChange: Props['onChange'] }) {
   const patch = (value: Partial<TextLayer>) => onChange(value as Partial<Layer>)
+  const currentFont = FONT_OPTIONS.find((font) => font.stack === layer.fontFamily)
 
   return (
     <div>
@@ -214,6 +216,25 @@ function TextControls({ layer, onChange }: { layer: TextLayer; onChange: Props['
           suffix="px"
           onChange={(fontSize) => patch({ fontSize })}
         />
+      </div>
+
+      <div className="mt-2 flex items-center gap-2">
+        <label htmlFor="text-font" className="text-[11px] text-brand-muted">
+          Tipografía
+        </label>
+        <select
+          id="text-font"
+          value={currentFont?.stack ?? layer.fontFamily}
+          onChange={(event) => patch({ fontFamily: event.target.value })}
+          className="min-w-0 flex-1 rounded border border-brand-line bg-brand-black/60 px-2 py-1.5 text-[11px] text-brand-light outline-none focus:border-brand-cyan"
+        >
+          {!currentFont && <option value={layer.fontFamily}>Actual</option>}
+          {FONT_OPTIONS.map((font) => (
+            <option key={font.id} value={font.stack}>
+              {font.label}
+            </option>
+          ))}
+        </select>
       </div>
 
       <div className="mt-2 flex items-center gap-2">
@@ -246,7 +267,7 @@ function TextControls({ layer, onChange }: { layer: TextLayer; onChange: Props['
       </div>
 
       <div className="mt-2 flex gap-1.5">
-        {([400, 700, 900] as const).map((weight) => (
+        {([400, 700] as const).map((weight) => (
           <button
             key={weight}
             type="button"
@@ -258,7 +279,7 @@ function TextControls({ layer, onChange }: { layer: TextLayer; onChange: Props['
             }`}
             style={{ fontWeight: weight }}
           >
-            {weight === 400 ? 'Normal' : weight === 700 ? 'Bold' : 'Black'}
+            {weight === 400 ? 'Normal' : 'Bold'}
           </button>
         ))}
         <button

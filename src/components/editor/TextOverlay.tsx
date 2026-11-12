@@ -37,7 +37,6 @@ export function TextOverlay({ layer, metrics, onCommit, onDone }: Props) {
   }
 
   const fontStyle = layer.fontStyle === 'italic' ? 'italic' : 'normal'
-  const fontWeight = layer.fontWeight === 400 ? 400 : 700
 
   return (
     <textarea
@@ -70,7 +69,7 @@ export function TextOverlay({ layer, metrics, onCommit, onDone }: Props) {
         minHeight: layer.height * scale,
         fontFamily: layer.fontFamily,
         fontSize: layer.fontSize * scale,
-        fontWeight,
+        fontWeight: layer.fontWeight,
         fontStyle,
         color: layer.fill,
         textAlign: layer.align,

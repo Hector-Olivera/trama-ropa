@@ -27,6 +27,10 @@ export function ProductPicker({
   const stripRef = useRef<HTMLDivElement | null>(null)
   const [canPrev, setCanPrev] = useState(false)
   const [canNext, setCanNext] = useState(false)
+  const addedProducts = products
+    .filter((product) => userAddedIds.includes(product.id))
+    .reverse()
+  const defaultProducts = products.filter((product) => !userAddedIds.includes(product.id))
 
   const measure = useCallback(() => {
     const strip = stripRef.current
@@ -71,7 +75,8 @@ export function ProductPicker({
         type="button"
         onClick={() => onChange(product.id)}
         aria-pressed={active}
-        className={`group relative flex flex-col gap-1 rounded-lg border p-2 text-left transition ${
+        title={product.label}
+        className={`group relative flex w-full flex-col gap-1 rounded-lg border p-2 text-left transition ${
           active
             ? 'border-brand-cyan bg-brand-cyan/10'
             : 'border-brand-line hover:border-brand-muted'
@@ -86,7 +91,7 @@ export function ProductPicker({
           />
         </div>
         <span
-          className={`text-[11px] font-semibold leading-tight ${
+          className={`block truncate text-[11px] font-semibold leading-tight ${
             active ? 'text-brand-cyan' : 'text-brand-light'
           }`}
         >
@@ -142,7 +147,7 @@ export function ProductPicker({
           onScroll={measure}
           className="trama-strip flex gap-2 overflow-x-auto snap-x snap-mandatory pb-1"
         >
-          {[...products].reverse().map((product) => (
+          {[...addedProducts, ...defaultProducts].map((product) => (
             <div
               key={product.id}
               data-user-added={userAddedIds.includes(product.id) ? 'true' : 'false'}
@@ -156,13 +161,26 @@ export function ProductPicker({
         {stripArrow('right')}
       </div>
 
-      <div className="hidden grid-cols-2 gap-2 lg:grid">
-        {products.map((product) => (
-          <div key={product.id} className="min-w-0">
-            {card(product)}
+      {products.length > 0 && (
+        <div className="hidden space-y-2 lg:block">
+          {addedProducts.length > 0 && (
+            <div className="grid grid-cols-2 gap-2">
+              {addedProducts.map((product) => (
+                <div key={product.id} className="min-w-0">
+                  {card(product)}
+                </div>
+              ))}
+            </div>
+          )}
+          <div className="grid grid-cols-2 gap-2">
+            {defaultProducts.map((product) => (
+              <div key={product.id} className="min-w-0">
+                {card(product)}
+              </div>
+            ))}
           </div>
-        ))}
-      </div>
+        </div>
+      )}
 
       {products.length === 0 && (
         <p className="text-[11px] leading-snug text-brand-muted">

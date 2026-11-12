@@ -5,7 +5,7 @@ import { ZOOM_MIN, clampZoom, computeCanvasMetrics } from '../../lib/canvasMetri
 import { renderDesignBlob } from '../../lib/exportImage'
 import { isSupabaseConfigured } from '../../lib/env'
 import { scrollToId } from '../../lib/scrollToId'
-import { mergeLoadedLayers } from '../../lib/designLayers'
+import { mergeLoadedLayers, normalizeLayerStyles } from '../../lib/designLayers'
 import {
   deleteDesign,
   cleanupBlobs,
@@ -52,6 +52,8 @@ export function EditorSection() {
     localProducts,
     activeDesignId,
     setActiveDesignId,
+    panel,
+    setPanel,
   } = useEditorProducts()
   const attachment = useDesignAttachment()
   const userAddedIds = useMemo(() => localProducts.map((item) => item.id), [localProducts])
@@ -60,7 +62,9 @@ export function EditorSection() {
   // effect seria un setState en render, que la regla react-hooks v7 marca.
   const [boot] = useState(() => {
     const autosave = listDesigns().find((design) => design.id === 'autosave')
-    return autosave && autosave.layers.length > 0 ? autosave : null
+    return autosave && autosave.layers.length > 0
+      ? { ...autosave, layers: normalizeLayerStyles(autosave.layers) }
+      : null
   })
 
   const product: ProductView | undefined = useMemo(
@@ -116,10 +120,10 @@ export function EditorSection() {
     () =>
       computeCanvasMetrics(
         { width: product?.width ?? 1, height: product?.height ?? 1 },
-        { width: shellSize.width, height: CANVAS_HEIGHT },
+        { width: shellSize.width, height: shellSize.height || CANVAS_HEIGHT },
         zoom,
       ),
-    [shellSize.width, product?.width, product?.height, zoom],
+    [shellSize.width, shellSize.height, product?.width, product?.height, zoom],
   )
 
   const handleCommit = useCallback(
@@ -273,7 +277,7 @@ export function EditorSection() {
 
   const handleSaveJump = useCallback(() => {
     setHighlightSaved(true)
-    scrollToId('mis-disenos')
+    scrollToId('mis-disenos', 'end')
   }, [])
 
   const handleSaveChanges = useCallback(() => {
@@ -356,9 +360,10 @@ export function EditorSection() {
     setNewName('')
     setDesignLimitNotice(false)
     setNamedFor({ productId: design.productId, name: design.name })
-    editor.loadLayers(mergeLoadedLayers(editor.layers, design.layers))
+    editor.loadLayers(normalizeLayerStyles(mergeLoadedLayers(editor.layers, design.layers)))
     setZoomFor({ productId: design.productId, value: clampZoom(design.zoom ?? 1) })
     setProductMissing(false)
+    setPanel('capas')
     void selectById(design.productId).then((found) => {
       if (!found) setProductMissing(true)
     })
@@ -384,81 +389,156 @@ export function EditorSection() {
   }
 
   return (
-    <section id="editor" className="relative scroll-mt-20 border-t border-brand-line py-10 md:py-16">
+    <section
+      id="editor"
+      className="relative scroll-mt-20 border-t border-brand-line py-10 md:py-16 lg:scroll-mt-[var(--nav-height)] lg:pt-0"
+    >
       <div className="mx-auto max-w-7xl px-4">
-        <header className="mb-8">
-          <p className="mb-2 text-xs font-bold uppercase tracking-widest text-brand-cyan">
-            {content.editor.eyebrow}
-          </p>
-          <h2 className="font-display text-3xl uppercase tracking-tight sm:text-4xl">
-            <RichTitle value={content.editor.title} />
-          </h2>
-          <p className="mt-2 max-w-2xl text-sm text-brand-muted">{content.editor.subtitle}</p>
-        </header>
-
-        {!product ? (
-          <div className="rounded-lg border border-dashed border-brand-line bg-brand-surface p-8 text-center">
-            <p className="text-sm text-brand-muted">
-              Todavía no hay prendas cargadas en el editor. Agregalas desde el panel de
-              administración.
+        <div className="grid gap-4 lg:h-[calc(100dvh-var(--nav-height))] lg:grid-cols-[minmax(0,3fr)_minmax(0,7fr)] lg:grid-rows-[auto_minmax(0,1fr)]">
+          <header className="order-1 mb-8 lg:col-start-1 lg:row-start-1 lg:mb-0 lg:shrink-0">
+            <p className="mb-2 text-xs font-bold uppercase tracking-widest text-brand-cyan">
+              {content.editor.eyebrow}
             </p>
-          </div>
-        ) : (
-          <>
-            <div className="grid gap-4 lg:grid-cols-[250px_minmax(0,1fr)_260px]">
-              <div className="min-w-0 space-y-5 rounded-lg border border-brand-line bg-brand-surface p-3">
-                <ProductPicker
-                  products={products}
-                  productId={productId}
-                  onChange={handleSelectProduct}
-                  layerCount={editor.layers.length}
-                  localCount={localCount}
-                  userAddedIds={userAddedIds}
-                />
+            <h2 className="font-display text-3xl uppercase tracking-tight sm:text-4xl">
+              <RichTitle value={content.editor.title} />
+            </h2>
+            <p className="mt-2 max-w-2xl text-sm text-brand-muted">{content.editor.subtitle}</p>
+          </header>
 
-                {productMissing && (
-                  <p role="status" className="text-[11px] leading-snug text-brand-pink">
-                    La foto de este diseño ya no está en el catálogo; quedó la prenda anterior.
-                  </p>
-                )}
-                <div className="space-y-2">
-                  <div className="grid grid-cols-2 gap-2">
-                    <LogoUploader
-                      onAdd={(input) => {
-                        setLayerLimitNotice(false)
-                        editor.addImageLayer(input)
-                      }}
-                      remaining={Math.max(0, MAX_LAYERS - layerCount)}
-                      onLimitReached={() => setLayerLimitNotice(true)}
-                    />
+          {!product ? (
+            <div className="order-2 rounded-lg border border-dashed border-brand-line bg-brand-surface p-8 text-center lg:col-span-2">
+              <p className="text-sm text-brand-muted">
+                Todavía no hay prendas cargadas en el editor. Agregalas desde el panel de
+                administración.
+              </p>
+            </div>
+          ) : (
+            <>
+              <div className="order-3 flex min-h-0 min-w-0 flex-col lg:col-start-1 lg:row-start-2">
+                <div
+                  role="tablist"
+                  aria-label="Paneles del editor"
+                  className="mb-3 grid shrink-0 grid-cols-2 gap-1 rounded-lg border border-brand-line bg-brand-black/40 p-1"
+                >
+                  {(['prendas', 'capas'] as const).map((name) => (
                     <button
+                      key={name}
                       type="button"
-                      onClick={() => {
-                        if (atLayerLimit) {
-                          setLayerLimitNotice(true)
-                          return
-                        }
-                        setLayerLimitNotice(false)
-                        editor.addTextLayer()
-                      }}
-                      className="rounded-lg border border-brand-line px-3 py-2.5 text-xs font-semibold text-brand-light transition hover:border-brand-cyan hover:text-brand-cyan"
+                      role="tab"
+                      id={`editor-tab-${name}`}
+                      aria-selected={panel === name}
+                      aria-controls="editor-panel"
+                      onClick={() => setPanel(name)}
+                      className={`rounded px-3 py-1.5 text-[11px] font-bold uppercase tracking-wider transition ${
+                        panel === name
+                          ? 'bg-brand-cyan text-brand-black'
+                          : 'text-brand-muted hover:text-brand-cyan'
+                      }`}
                     >
-                      + Agregar texto
+                      {name === 'prendas' ? 'Prendas' : 'Capas'}
                     </button>
-                  </div>
-                  {atLayerLimit && layerLimitNotice && (
-                    <p role="alert" className="text-[11px] leading-snug text-brand-pink">
-                      Llegaste al límite de {MAX_LAYERS} capas. Eliminá alguna para poder agregar
-                      otra.
-                    </p>
-                  )}
-                  <p className="text-[10px] leading-snug text-brand-muted">
-                    Un PNG con fondo transparente da el mejor resultado.
-                  </p>
+                  ))}
                 </div>
+                <div
+                  id="editor-panel"
+                  role="tabpanel"
+                  aria-labelledby={`editor-tab-${panel}`}
+                  className="min-h-0 min-w-0 rounded-lg border border-brand-line bg-brand-surface p-3 lg:flex lg:min-h-0 lg:flex-1 lg:flex-col lg:overflow-hidden"
+                >
+                  {panel === 'prendas' ? (
+                    <div className="trama-scroll space-y-5 lg:min-h-0 lg:flex-1 lg:overflow-y-auto">
+                      <ProductPicker
+                        products={products}
+                        productId={productId}
+                        onChange={handleSelectProduct}
+                        layerCount={editor.layers.length}
+                        localCount={localCount}
+                        userAddedIds={userAddedIds}
+                      />
+
+                      {productMissing && (
+                        <p role="status" className="text-[11px] leading-snug text-brand-pink">
+                          La foto de este diseño ya no está en el catálogo; quedó la prenda
+                          anterior.
+                        </p>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="lg:flex lg:min-h-0 lg:flex-1 lg:flex-col">
+                      <div className="shrink-0">
+                        <h3 className="mb-2 flex items-center justify-between gap-2 text-[11px] font-bold uppercase tracking-widest text-brand-muted">
+                          <span>Capas</span>
+                          <span
+                            className={`tabular-nums ${
+                              atLayerLimit ? 'text-brand-cyan' : 'text-brand-muted'
+                            }`}
+                          >
+                            {layerCount}/{MAX_LAYERS}
+                          </span>
+                        </h3>
+                        <div className="space-y-2">
+                          <div className="grid grid-cols-2 gap-2">
+                            <LogoUploader
+                              onAdd={(input) => {
+                                setLayerLimitNotice(false)
+                                editor.addImageLayer(input)
+                              }}
+                              remaining={Math.max(0, MAX_LAYERS - layerCount)}
+                              onLimitReached={() => setLayerLimitNotice(true)}
+                            />
+                            <button
+                              type="button"
+                              onClick={() => {
+                                if (atLayerLimit) {
+                                  setLayerLimitNotice(true)
+                                  return
+                                }
+                                setLayerLimitNotice(false)
+                                editor.addTextLayer()
+                              }}
+                              className="rounded-lg border border-brand-line px-3 py-2.5 text-xs font-semibold text-brand-light transition hover:border-brand-cyan hover:text-brand-cyan"
+                            >
+                              + Agregar texto
+                            </button>
+                          </div>
+                          {atLayerLimit && layerLimitNotice && (
+                            <p role="alert" className="text-[11px] leading-snug text-brand-pink">
+                              Llegaste al límite de {MAX_LAYERS} capas. Eliminá alguna para poder
+                              agregar otra.
+                            </p>
+                          )}
+                          <p className="text-[10px] leading-snug text-brand-muted">
+                            Un PNG con fondo transparente da el mejor resultado.
+                          </p>
+                        </div>
+                      </div>
+                      <div className="trama-scroll mt-3 min-h-0 lg:flex-1 lg:overflow-y-auto">
+                        <LayersPanel
+                          layers={editor.layers}
+                          selectedId={editor.selectedId}
+                          onSelect={handleSelectLayer}
+                          onChange={handleCommit}
+                          onToggleVisible={(id) => {
+                            const layer = editor.layers.find((item) => item.id === id)
+                            if (layer) {
+                              handleCommit(id, { visible: !layer.visible } as Partial<Layer>)
+                            }
+                          }}
+                          onRemove={editor.removeLayer}
+                        />
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                <p className="mt-2 shrink-0 text-[10px] leading-snug text-brand-muted">
+                  Doble click en un texto para editarlo · Supr para ocultar · Ctrl+Z deshacer ·
+                  flechas para mover · Shift+flechas para pasos de 10 px
+                  {zoom > 1 && ' · Arrastrá la prenda para mover la vista'}
+                </p>
               </div>
 
-              <div className="min-w-0 space-y-3">
+              <div className="order-2 flex min-h-0 min-w-0 flex-col lg:col-start-2 lg:row-span-2 lg:row-start-1">
                 <EditorToolbar
                   canUndo={editor.canUndo}
                   canRedo={editor.canRedo}
@@ -475,11 +555,10 @@ export function EditorSection() {
                   isSaved={isCurrentSaved}
                 />
 
-                <div className="relative">
+                <div className="relative mt-3 lg:min-h-0 lg:flex-1">
                   <div
                     ref={shellRef}
-                    style={{ height: CANVAS_HEIGHT }}
-                    className={`trama-scroll overflow-auto ${zoom > 1 ? 'cursor-grab active:cursor-grabbing' : ''}`}
+                    className={`trama-scroll h-[640px] overflow-auto lg:h-full ${zoom > 1 ? 'cursor-grab active:cursor-grabbing' : ''}`}
                   >
                     <EditorCanvas
                       product={product}
@@ -498,61 +577,31 @@ export function EditorSection() {
 
                   <ZoomControl zoom={zoom} onChange={handleZoom} />
                 </div>
-
-                <p className="text-[11px] text-brand-muted">
-                  Doble click en un texto para editarlo · Supr para ocultar · Ctrl+Z deshacer ·
-                  flechas para mover · Shift+flechas para pasos de 10 px
-                  {zoom > 1 && ' · Arrastrá la prenda para mover la vista'}
-                </p>
               </div>
+            </>
+          )}
+        </div>
 
-              <div className="min-w-0 space-y-4 rounded-lg border border-brand-line bg-brand-surface p-3">
-                <div>
-                  <h3 className="mb-2 flex items-center justify-between gap-2 text-[11px] font-bold uppercase tracking-widest text-brand-muted">
-                    <span>Capas</span>
-                    <span
-                      className={`tabular-nums ${
-                        atLayerLimit ? 'text-brand-cyan' : 'text-brand-muted'
-                      }`}
-                    >
-                      {layerCount}/{MAX_LAYERS}
-                    </span>
-                  </h3>
-                  <LayersPanel
-                    layers={editor.layers}
-                    selectedId={editor.selectedId}
-                    onSelect={handleSelectLayer}
-                    onChange={handleCommit}
-                    onToggleVisible={(id) => {
-                      const layer = editor.layers.find((item) => item.id === id)
-                      if (layer) handleCommit(id, { visible: !layer.visible } as Partial<Layer>)
-                    }}
-                    onRemove={editor.removeLayer}
-                  />
-                </div>
-              </div>
-            </div>
-
-            <SavedDesigns
-              versions={versions}
-              name={designName}
-              saveState={saveState}
-              highlight={highlightSaved}
-              activeId={activeDesignId}
-              savingAsNew={savingAsNew}
-              newName={newName}
-              savedCount={savedCount}
-              maxSaved={MAX_SAVED_DESIGNS}
-              limitNotice={designLimitNotice}
-              canSaveChanges={canSaveChanges}
-              onNewNameChange={setNewName}
-              onSaveChanges={handleSaveChanges}
-              onSaveAsNew={handleSaveAsNew}
-              onCancelNew={handleCancelNew}
-              onLoad={handleLoad}
-              onDelete={handleDelete}
-            />
-          </>
+        {product && (
+          <SavedDesigns
+            versions={versions}
+            name={designName}
+            saveState={saveState}
+            highlight={highlightSaved}
+            activeId={activeDesignId}
+            savingAsNew={savingAsNew}
+            newName={newName}
+            savedCount={savedCount}
+            maxSaved={MAX_SAVED_DESIGNS}
+            limitNotice={designLimitNotice}
+            canSaveChanges={canSaveChanges}
+            onNewNameChange={setNewName}
+            onSaveChanges={handleSaveChanges}
+            onSaveAsNew={handleSaveAsNew}
+            onCancelNew={handleCancelNew}
+            onLoad={handleLoad}
+            onDelete={handleDelete}
+          />
         )}
       </div>
     </section>

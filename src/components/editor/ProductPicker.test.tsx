@@ -5,11 +5,30 @@ import type { ComponentProps } from 'react'
 import { ProductPicker } from './ProductPicker'
 import type { ProductView } from '../../types'
 
-const PRODUCTS: ProductView[] = [
+const LOCAL_A: ProductView = {
+  id: 'cat-a',
+  slug: 'buzo-a',
+  label: 'Buzo A',
+  src: '/assets/buzo-a.png',
+  width: 100,
+  height: 100,
+}
+const LOCAL_B: ProductView = {
+  id: 'cat-b',
+  slug: 'buzo-b',
+  label: 'Buzo B',
+  src: '/assets/buzo-b.png',
+  width: 100,
+  height: 100,
+}
+
+const DEFAULTS: ProductView[] = [
   { id: 'p1', slug: 'remera', label: 'Remera', src: '/assets/remera.png', width: 100, height: 100 },
   { id: 'p2', slug: 'polar', label: 'Polar', src: '/assets/polar.png', width: 100, height: 100 },
   { id: 'p3', slug: 'short', label: 'Short', src: '/assets/short.png', width: 100, height: 100 },
 ]
+
+const PRODUCTS: ProductView[] = [...DEFAULTS, LOCAL_A, LOCAL_B]
 
 type Props = ComponentProps<typeof ProductPicker>
 
@@ -20,7 +39,7 @@ function renderPicker(overrides: Partial<Props> = {}) {
     onChange: vi.fn(),
     layerCount: 0,
     localCount: 0,
-    userAddedIds: ['p2'],
+    userAddedIds: ['cat-a', 'cat-b'],
     ...overrides,
   }
   return render(<ProductPicker {...props} />)
@@ -32,10 +51,14 @@ function stripOf(container: HTMLElement): HTMLElement {
   return strip
 }
 
-function gridOf(container: HTMLElement): HTMLElement {
-  const grid = stripOf(container).parentElement?.nextElementSibling
-  if (!(grid instanceof HTMLElement)) throw new Error('No se encontró la grilla de prendas.')
-  return grid
+function desktopOf(container: HTMLElement): HTMLElement {
+  const desktop = stripOf(container).parentElement?.nextElementSibling
+  if (!(desktop instanceof HTMLElement)) throw new Error('No se encontró la grilla de prendas.')
+  return desktop
+}
+
+function labelsOf(root: HTMLElement): (string | null)[] {
+  return [...root.querySelectorAll('button')].map((button) => button.textContent)
 }
 
 function stubStripMetrics(strip: HTMLElement, values: { client: number; scroll: number; left: number }) {
@@ -64,18 +87,23 @@ afterEach(() => {
 })
 
 describe('ProductPicker', () => {
-  it('muestra el carrusel en orden inverso y la grilla en orden original', () => {
+  it('muestra las agregadas primero (última subida primero) y las default en orden', () => {
     const { container } = renderPicker()
 
-    const stripLabels = [...stripOf(container).querySelectorAll('button')].map(
-      (button) => button.textContent,
-    )
-    expect(stripLabels).toEqual(['Short', 'Polar', 'Remera'])
+    const expected = ['Buzo B', 'Buzo A', 'Remera', 'Polar', 'Short']
+    expect(labelsOf(stripOf(container))).toEqual(expected)
+    expect(labelsOf(desktopOf(container))).toEqual(expected)
+  })
 
-    const gridLabels = [...gridOf(container).querySelectorAll('button')].map(
-      (button) => button.textContent,
-    )
-    expect(gridLabels).toEqual(['Remera', 'Polar', 'Short'])
+  it('deja una sola agregada arriba y las default abajo en su orden', () => {
+    const { container } = renderPicker({
+      products: [...DEFAULTS, LOCAL_A],
+      userAddedIds: ['cat-a'],
+    })
+
+    const expected = ['Buzo A', 'Remera', 'Polar', 'Short']
+    expect(labelsOf(stripOf(container))).toEqual(expected)
+    expect(labelsOf(desktopOf(container))).toEqual(expected)
   })
 
   it('deja el carrusel sólo en mobile y la grilla en desktop', () => {
@@ -83,8 +111,26 @@ describe('ProductPicker', () => {
 
     const wrapper = stripOf(container).parentElement
     expect(wrapper?.className.split(' ')).toContain('lg:hidden')
-    expect(gridOf(container).className.split(' ')).toContain('hidden')
-    expect(gridOf(container).className.split(' ')).toContain('lg:grid')
+    expect(desktopOf(container).className.split(' ')).toContain('hidden')
+    expect(desktopOf(container).className.split(' ')).toContain('lg:block')
+  })
+
+  it('da el mismo ancho a todas las tarjetas y trunca el nombre', () => {
+    const { container } = renderPicker()
+
+    const cards = [
+      ...stripOf(container).querySelectorAll('button'),
+      ...desktopOf(container).querySelectorAll('button'),
+    ]
+    expect(cards).toHaveLength(10)
+    for (const card of cards) {
+      expect(card.className).toContain('w-full')
+      expect(card.getAttribute('title')).toBeTruthy()
+    }
+
+    for (const label of stripOf(container).querySelectorAll('button > span')) {
+      expect(label.className).toContain('truncate')
+    }
   })
 
   it('lleva el scroll a la primera prenda que sumó el usuario', () => {

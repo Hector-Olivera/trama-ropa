@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { Contact } from './Contact'
 import { ContentProvider } from '../content/ContentProvider'
 import { DesignAttachmentContext, DesignAttachmentProvider } from './DesignAttachment'
@@ -9,6 +9,7 @@ import type { DesignAttachmentValue } from './DesignAttachment'
 afterEach(() => {
   cleanup()
   vi.unstubAllGlobals()
+  vi.restoreAllMocks()
 })
 
 function attachmentValue(overrides: Partial<DesignAttachmentValue> = {}): DesignAttachmentValue {
@@ -71,9 +72,57 @@ describe('Contact', () => {
     expect(url).toBe('https://api.web3forms.com/submit')
     expect(init?.method).toBe('POST')
     expect(init?.body).toContain('20 remeras')
+    expect(JSON.parse(init?.body as string).access_key).toBe('test-access-key')
 
-    const alert = await screen.findByRole('alert')
-    expect(alert.textContent).toContain('¡Gracias!')
+    const status = await screen.findByRole('status')
+    expect(status.textContent).toContain('Mensaje Enviado')
+    expect(status.textContent).toContain('Nos comunicaremos a la brevedad')
+    expect(screen.queryByText(/¡Gracias!/)).toBeNull()
+    expect(screen.getByRole('button', { name: 'Enviar consulta' })).toBeTruthy()
+    expect(screen.queryByRole('button', { name: 'Enviado' })).toBeNull()
+  })
+
+  it('permite enviar otra consulta después del éxito', async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      json: async () => ({ success: true }),
+    } as unknown as Response)
+    vi.stubGlobal('fetch', fetchMock)
+
+    renderContact()
+
+    await fillForm('Primera consulta')
+    fireEvent.click(screen.getByRole('button', { name: 'Enviar consulta' }))
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1))
+    await screen.findByRole('status')
+
+    await fillForm('Segunda consulta')
+    fireEvent.click(screen.getByRole('button', { name: 'Enviar consulta' }))
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(2))
+  })
+
+  it('oculta el cartel de éxito a los 4 segundos', async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      json: async () => ({ success: true }),
+    } as unknown as Response)
+    vi.stubGlobal('fetch', fetchMock)
+    const timeoutSpy = vi.spyOn(window, 'setTimeout')
+    renderContact()
+
+    await fillForm('Consulta')
+
+    fireEvent.click(screen.getByRole('button', { name: 'Enviar consulta' }))
+
+    expect(await screen.findByRole('status')).toBeTruthy()
+    const hide = timeoutSpy.mock.calls.find(([, delay]) => delay === 4000)?.[0] as
+      | (() => void)
+      | undefined
+    expect(hide).toBeTruthy()
+
+    act(() => {
+      hide?.()
+    })
+
+    expect(screen.queryByRole('status')).toBeNull()
   })
 
   it('muestra un error si el envío falla', async () => {
@@ -88,6 +137,7 @@ describe('Contact', () => {
 
     const alert = await screen.findByRole('alert')
     expect(alert.textContent).toContain('No se pudo enviar')
+    expect(screen.queryByRole('status')).toBeNull()
   })
 
   it('muestra el diseño adjunto con su enlace y lo puede quitar', async () => {

@@ -134,16 +134,20 @@ describe('SavedDesigns', () => {
 
   it('pide confirmación antes de borrar un diseño', () => {
     const onDelete = vi.fn()
-    const confirm = vi.spyOn(window, 'confirm').mockReturnValue(false)
     render(<SavedDesigns {...baseProps} onDelete={onDelete} />)
 
     fireEvent.click(screen.getByRole('button', { name: 'Borrar Uno' }))
-    expect(confirm).toHaveBeenCalledWith('¿Eliminar este diseño?')
+    const dialog = screen.getByRole('alertdialog', { name: '¿Eliminar este diseño?' })
+    expect(dialog.textContent).toContain('"Uno" se va a borrar de tus diseños.')
+
+    fireEvent.click(screen.getByRole('button', { name: 'Cancelar' }))
+    expect(screen.queryByRole('alertdialog')).toBeNull()
     expect(onDelete).not.toHaveBeenCalled()
 
-    confirm.mockReturnValue(true)
     fireEvent.click(screen.getByRole('button', { name: 'Borrar Uno' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Eliminar' }))
     expect(onDelete).toHaveBeenCalledWith('a')
+    expect(screen.queryByRole('alertdialog')).toBeNull()
   })
 
   it('muestra "Cambios guardados" y se oculta solo', () => {

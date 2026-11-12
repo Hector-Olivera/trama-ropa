@@ -37,6 +37,7 @@ function Probe() {
     select,
     activeDesignId,
     setActiveDesignId,
+    panel,
   } = useEditorProducts()
   const [result, setResult] = useState('')
 
@@ -51,6 +52,7 @@ function Probe() {
       <span data-testid="local-count">{localCount}</span>
       <span data-testid="result">{result}</span>
       <span data-testid="active">{activeDesignId ?? ''}</span>
+      <span data-testid="panel">{panel}</span>
       <button type="button" onClick={() => setActiveDesignId('d1')}>
         Activar diseño
       </button>
@@ -227,6 +229,16 @@ describe('EditorProducts', () => {
     fireEvent.click(screen.getByRole('button', { name: `Elegir ${adminId}` }))
 
     expect(screen.getByTestId('active').textContent).toBe('d1')
+  })
+
+  it('abre la pestaña de capas al traer una prenda del catálogo', async () => {
+    renderProvider()
+    await screen.findByRole('button', { name: 'Agregar calza-oxford-01' })
+    expect(screen.getByTestId('panel').textContent).toBe('prendas')
+
+    await addItem('calza-oxford-01')
+
+    await waitFor(() => expect(screen.getByTestId('panel').textContent).toBe('capas'))
   })
 
   it('suelta el diseño activo al traer una prenda del catálogo', async () => {

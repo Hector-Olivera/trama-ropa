@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import type { Layer } from '../types'
-import { mergeLoadedLayers } from './designLayers'
+import { normalizeLayerStyles, mergeLoadedLayers } from './designLayers'
+import { ARIAL_FONT_STACK, LEGACY_DISPLAY_FONT_STACK } from './fonts'
 
 const textLayer = (id: string, overrides: Partial<Layer> = {}): Layer =>
   ({
@@ -25,6 +26,28 @@ const textLayer = (id: string, overrides: Partial<Layer> = {}): Layer =>
     letterSpacing: 0,
     ...overrides,
   }) as Layer
+
+describe('normalizeLayerStyles', () => {
+  it('migra los textos viejos de Arial Black 900 a Arial 700', () => {
+    const legacy = {
+      ...textLayer('a'),
+      fontFamily: LEGACY_DISPLAY_FONT_STACK,
+      fontWeight: 900,
+    } as unknown as Layer
+
+    const [normalized] = normalizeLayerStyles([legacy])
+
+    expect(normalized).toMatchObject({
+      fontFamily: ARIAL_FONT_STACK,
+      fontWeight: 700,
+    })
+  })
+
+  it('deja intactas las capas que ya están al día', () => {
+    const current = textLayer('a')
+    expect(normalizeLayerStyles([current])[0]).toBe(current)
+  })
+})
 
 describe('mergeLoadedLayers', () => {
   it('conserva las capas actuales que no usa el diseño, ocultas', () => {

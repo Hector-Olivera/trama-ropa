@@ -27,6 +27,17 @@ cambia, se reescribe acá. `AGENTS.md` tiene las reglas de trabajo y los comando
   `Konva.Filters` + `cache()` (rompe el `Transformer`); texto con `<textarea>` DOM
   (`TextOverlay`), no `Konva.Text`; la prenda base se dibuja con `useLoadedImage` (resuelve el
   `MediaRef`), nunca con el src crudo.
+- **Voltear imágenes**: Konva **no** tiene `flipX`/`flipY` como props. El espejado se
+  pre-renderiza en `getRenderedCanvas` (`lib/imageFilters.ts`) con `translate` + `scale(-1)`,
+  cacheado por `src + filtro + flips`; nunca con `scaleX` negativo en el nodo (rompe el
+  `Transformer` y el export). Sin filtros ni flips, Konva usa el `<img>` directo.
+- **Texto y pesos**: `lib/fonts.ts` define 8 stacks del sistema con nombre real: Arial, Segoe
+  UI, Verdana, Trebuchet MS, Georgia, Times New Roman, Courier New e Impact (sin webfonts: 0 KB
+  extra). El texto nuevo usa **Arial + Bold**. Sólo hay **Normal/Bold**: se quitó Black porque
+  en 6 de las 8 familias el navegador lo renderiza igual que Bold. Konva recibe **`fontStyle`**
+  (`normal` / `bold`, con `italic` antepuesto), no `fontWeight`; `TextOverlay` usa
+  `layer.fontWeight` real y `layer.fontFamily` directo. `normalizeLayerStyles`
+  (`lib/designLayers.ts`) migra autosave/diseños viejos: 900 → 700 y Arial Black → Arial.
 - **Imágenes**: en el documento se guarda la clave `trama:blob:<id>` (nunca un object URL).
   Binarios en IndexedDB; `MediaRef` = path de `public/` o clave de blob; toda `<img>` de
   contenido pasa por `MediaImage`. El GC `cleanupBlobs()` (`lib/storage.ts`) borra lo que no
@@ -48,11 +59,25 @@ cambia, se reescribe acá. `AGENTS.md` tiene las reglas de trabajo y los comando
   (estado `zoomFor` con el `productId` en `EditorSection`, así también cubre el alta desde el
   catálogo sin tocar el provider). Entra en la firma del autosave y en `Design.zoom`
   (opcional: los diseños viejos abren al 100%), así que cargar una versión restaura la vista.
-  Las scrollbars del lienzo usan la clase `trama-scroll` (`index.css`).
+  Las scrollbars del lienzo usan la clase `trama-scroll` (`index.css`). El control flotante de
+  zoom está **abajo a la izquierda** del lienzo (`bottom-4 left-4`).
 - **Móvil**: el menú de la barra es una hamburguesa (`Nav`) que lista **`nav.links`** del
   contenido (no hardcodear atajos: se editan en el admin); cierra al navegar y con Escape.
   Las secciones usan `py-10 md:py-16` (el desktop conserva el espaciado grande) y las 4 fotos
   de "Cómo funciona" van en una sola fila (`grid-cols-4`) también en mobile.
+- **Layout del editor**: el workspace mide `calc(100dvh - var(--nav-height))` (token
+  `--nav-height: 60px` en `index.css`) y el ancla usa `scroll-mt` igual al nav; "Mis diseños" queda
+  debajo. En `lg` es una grilla **30/70** (`minmax(0,3fr)` / `minmax(0,7fr)`): izquierda = header +
+  pestañas **Prendas/Capas** (`role="tablist"`/`tab`/`tabpanel`) y la línea de ayuda al pie;
+  derecha = `EditorToolbar` + lienzo flexible (`h-[640px] lg:h-full`) con todo el alto restante.
+  Prendas sólo tiene el `ProductPicker` (con scroll propio); **Capas** tiene el contador `n/12`,
+  los botones **+ Subir logo** / **+ Agregar texto** (con aviso de tope y nota PNG) **fijos arriba**
+  y sólo la lista de `LayersPanel` scrollea (`lg:flex-1 lg:min-h-0 lg:overflow-y-auto`). Sólo se
+  monta la pestaña activa. La pestaña vive en `EditorProducts` (`panel`/`setPanel`) y pasa a
+  **Capas** al traer una prenda del catálogo y al cargar un diseño guardado; elegir prenda en
+  Prendas no la cambia. Las métricas usan el **alto medido** del shell (`useElementSize`) en vez
+  de la constante fija. En mobile el orden es **título → lienzo → pestañas/panel** (`order-*`),
+  con lienzo de 640px.
 - **Barra del editor** (`EditorToolbar`): una sola línea con scroll horizontal interno. Los
   carteles (`limit` / `save-first` / `limit-save` / `attached`) se dibujan con
   `position: fixed` anclados al rect del botón: un `absolute` dentro de un contenedor con
@@ -65,14 +90,16 @@ cambia, se reescribe acá. `AGENTS.md` tiene las reglas de trabajo y los comando
   en una fila con **scroll horizontal sin barra visible** (clase `.trama-strip`: `scrollbar-width:
   none` + `::-webkit-scrollbar { display: none }`), snap, y **flechas `‹ ›`** translúcidas
   (círculos `bg-brand-black/70 backdrop-blur`, `opacity-70`, hover cyan) que se **ocultan en cada
-  extremo** y sólo aparece si hay overflow (paso de 120 px = una tarjeta). En **desktop** queda la
-  grilla de 2 columnas **siempre como antes** (`hidden lg:grid`, orden original). El carrusel
-  muestra las prendas **en orden inverso** y arranca scrolleado a la **primera que sumó el
-  visitante** (`userAddedIds`, memoizado en `EditorSection` con `useMemo` para que el efecto no se
-  recue en cada render). Las métricas de las flechas salen de `onScroll` + `resize` +
+  extremo** y sólo aparece si hay overflow (paso de 120 px = una tarjeta). En **desktop** la grilla
+  de 2 columnas muestra arriba a las prendas **agregadas** (la última subida primero) y abajo a las
+  **del admin, siempre fijas y en su orden**. El carrusel mobile usa el mismo orden
+  (`[...agregadas, ...defaults]`) y arranca scrolleado a la primera agregada (`userAddedIds`,
+  memoizado en `EditorSection` con `useMemo` para que el efecto no se recree en cada render). Todas
+  las tarjetas son `w-full` (mismo ancho aunque el nombre sea largo) y el label va `truncate` con
+  `title` para verlo completo. Las métricas de las flechas salen de `onScroll` + `resize` +
   `requestAnimationFrame` (callbacks: nunca setState sincróno en el body de un effect).
-- **Pitfall `min-w-0` (mobile)**: `EditorSection` apila los 3 paneles en un `grid` de **una sola
-  columna compartida** (`grid gap-4 lg:grid-cols-[250px_minmax(0,1fr)_260px]`). Un item sin
+- **Pitfall `min-w-0` (mobile)**: `EditorSection` usa una **grilla compartida**
+  (`grid gap-4 lg:grid-cols-[minmax(0,3fr)_minmax(0,7fr)]`). Un item sin
   `min-w-0` hereda `min-width: auto` (min-content de su contenido): el strip del carrusel (fila
   completa de tarjetas `shrink-0 w-28`) **ensanchaba la columna y toda la página** y, al no haber
   overflow interno, `measure()` apagaba las flechas y el scroll. El `overflow-x-auto` del strip
@@ -96,7 +123,8 @@ cambia, se reescribe acá. `AGENTS.md` tiene las reglas de trabajo y los comando
   sin medir alturas en effects (regla de `react-hooks` v7). Cierra con Escape, `pointerdown`
   afuera, scroll de página y resize. Seleccionar una capa (nombre o pincel) la hace **visible**
   automáticamente. `Supr`/`Backspace` **oculta** la capa seleccionada (ya no borra); borrar es
-  sólo con la `×`, que pide `window.confirm('¿Eliminar esta capa?')` (mismo patrón que el admin).
+  sólo con la `×`, que abre un `ConfirmDeleteToast` propio (estilo del cartel de Contacto, **al
+  centro de la pantalla**) con Cancelar/Eliminar; ya no usa `window.confirm`.
   En mobile la fila va en **una sola línea** (`[miniatura] [nombre truncado] [pincel] [texto] [×]`)
   con botones compactos (`text-[8px]` → `lg:text-[9px]`, `×` en `w-4`); _no_ usar `flex-wrap` en
   dos líneas: desalineaba la miniatura con los botones y sumaba altura.
@@ -126,12 +154,14 @@ cambia, se reescribe acá. `AGENTS.md` tiene las reglas de trabajo y los comando
   fuera del bloque de acciones y Enter (confirmar) lo manejan; `autosave` sigue aparte y
   `newName` no entra en la firma. Tope `MAX_SAVED_DESIGNS = 12` (en `storage.ts`): contador
   `n/12` cyan al llegar y aviso rosa al intentar crear el 13.º (el botón sigue clickeable, como
-  en Capas). Borrar el activo limpia el resaltado y pide **`window.confirm('¿Eliminar este
-  diseño?')`** (mismo patrón que Capas). Al guardar, `SavedDesigns` muestra un **cartel fijo 3 s
-  arriba del botón** ("Cambios guardados" para "Guardar cambios", "Diseño guardado" para
-  "Guardar como nuevo"), calculado con el rect del botón (patrón de `EditorToolbar`), con
-  `role="status"` y descarte por scroll/pointerdown; el timer vive en un ref y se limpia al
-  desmontar. "Guardar cambios" tiene feedback al presionar (`active:scale-[0.97]` + tinte cyan) y
+  en Capas). Borrar el activo limpia el resaltado y abre el mismo **`ConfirmDeleteToast`** que
+  Capas (título propio y nombre del diseño; ya no usa `window.confirm`). Al guardar,
+  `SavedDesigns` muestra un **cartel fijo 3 s arriba del botón que lo dispara** ("Cambios
+  guardados" sobre "Guardar cambios", "Diseño guardado" sobre "Guardar como nuevo"), calculado
+  con `getBoundingClientRect()` del ref correspondiente, con `role="status"` y descarte por
+  scroll/pointerdown. El timer vive en un ref y se limpia al desmontar. El **Guardar** de la barra scrollea con `scrollToId('mis-disenos', 'end')` (más
+  `scroll-mb-6`) para dejar la tarjeta al pie de la pantalla, no arriba. "Guardar cambios" tiene
+  feedback al presionar (`active:scale-[0.97]` + tinte cyan) y
   queda con borde/texto cyan mientras se ve el cartel. En mobile las acciones van en **una sola
   fila** (`flex-nowrap` + `w-full`): botones con `text-[10px]`/`px-2` y el input `min-w-0 flex-1`
   se achica para entrar; desde `sm` vuelven al tamaño y alineación de escritorio.
@@ -151,10 +181,19 @@ cambia, se reescribe acá. `AGENTS.md` tiene las reglas de trabajo y los comando
 
 ## Contacto
 
-- El formulario usa **Web3Forms** (sin backend; `VITE_CONTACT_ACCESS_KEY`, pública). El card
-  de email es un `mailto:` (abre el cliente de correo; el "elegí una app" es del SO, no un bug).
+- El formulario usa **Web3Forms** (sin backend; `VITE_CONTACT_ACCESS_KEY`, pública, se lee vía
+  `CONTACT_ACCESS_KEY` de `lib/env.ts`). Sin esa variable el submit no llama a la API y muestra un
+  error claro. En Vercel tiene que estar en **Production y Preview** (Vite la hornea: redeploy).
+  El card de email es un `mailto:` (abre el cliente de correo; el "elegí una app" es del SO, no un
+  bug).
   Los diseños adjuntados viajan como **link firmado** en el cuerpo del mensaje; al enviar con
   éxito se limpian (`clear()` del contexto, revoca las vistas previas).
+- **Cartel de éxito**: al enviar aparece un aviso fijo **al centro de la pantalla** (4 s,
+  `role="status"`, borde cyan/fondo negro, centrado con `top-1/2 left-1/2` y translate) con
+  "Mensaje Enviado" / "Nos comunicaremos a la brevedad". Reemplaza el mensaje inline
+  "¡Gracias!". El timer vive en un ref y se limpia al desmontar y al iniciar otro envío.
+  El botón **nunca queda en "Enviado"**: sólo alterna `Enviando...` / `Enviar consulta` y se
+  puede volver a enviar enseguida (el éxito lo comunica únicamente el cartel).
 - **Botón flotante** (`FloatingAttachment`, montado en `Landing` junto a los providers):
   aparece únicamente mientras haya diseños adjuntados. Es un **flecha SVG con el texto
   adentro** (punta abajo "Enviar Diseño", punta arriba "Volver"; `fill` negro/65% +

@@ -1,7 +1,10 @@
 import { useContent } from '../content/ContentProvider'
+import { CONTACT_ACCESS_KEY } from '../lib/env'
 import { RichTitle } from './RichTitle'
 import { useDesignAttachment } from './DesignAttachment'
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
+
+const TOAST_DURATION = 4000
 
 export function Contact() {
   const { content } = useContent()
@@ -11,15 +14,31 @@ export function Contact() {
   const [email, setEmail] = useState('')
   const [message, setMessage] = useState('')
   const [sending, setSending] = useState(false)
-  const [sent, setSent] = useState(false)
   const [err, setErr] = useState<string | null>(null)
-  const accessKey = import.meta.env.VITE_CONTACT_ACCESS_KEY
+  const [toast, setToast] = useState(false)
+  const toastTimer = useRef<number | null>(null)
+
+  useEffect(
+    () => () => {
+      if (toastTimer.current !== null) window.clearTimeout(toastTimer.current)
+    },
+    [],
+  )
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault()
-    if (sending || sent) return
+    if (sending) return
+    if (!CONTACT_ACCESS_KEY) {
+      setErr('El formulario no está configurado. Probá de nuevo o escribinos por WhatsApp.')
+      return
+    }
     setSending(true)
     setErr(null)
+    setToast(false)
+    if (toastTimer.current !== null) {
+      window.clearTimeout(toastTimer.current)
+      toastTimer.current = null
+    }
 
     try {
       const formData = new FormData(event.currentTarget)
@@ -37,12 +56,16 @@ export function Contact() {
       })
       const data = await res.json()
       if (data.success) {
-        setSent(true)
         setName('')
         setEmail('')
         setMessage('')
         setErr(null)
         clear()
+        setToast(true)
+        toastTimer.current = window.setTimeout(() => {
+          setToast(false)
+          toastTimer.current = null
+        }, TOAST_DURATION)
       } else {
         setErr(data.message || 'No se pudo enviar. Probá de nuevo o escribinos por WhatsApp.')
       }
@@ -131,7 +154,7 @@ export function Contact() {
         >
           <h3 className="text-sm font-bold uppercase tracking-wide">{contact.formTitle}</h3>
 
-          <input type="hidden" name="access_key" value={accessKey} />
+          <input type="hidden" name="access_key" value={CONTACT_ACCESS_KEY} />
           <input type="hidden" name="subject" value="Consulta desde Trama" />
           <input type="hidden" name="from_name" value="Trama" />
           <input type="checkbox" name="botcheck" className="hidden" style={{ display: 'none' }} />
@@ -228,14 +251,9 @@ export function Contact() {
             disabled={sending}
             className="w-full rounded-md bg-brand-cyan px-4 py-2.5 text-sm font-bold text-brand-black transition hover:bg-brand-pink hover:text-white disabled:opacity-50"
           >
-            {sending ? 'Enviando...' : sent ? 'Enviado' : 'Enviar consulta'}
+            {sending ? 'Enviando...' : 'Enviar consulta'}
           </button>
 
-          {sent && (
-            <p role="alert" className="text-[11px] text-brand-cyan">
-              ¡Gracias! Te vamos a responder a la brevedad.
-            </p>
-          )}
           {err && (
             <p role="alert" className="text-[11px] text-brand-pink">
               {err}
@@ -250,6 +268,17 @@ export function Contact() {
           <p className="text-[11px] text-brand-muted">{contact.formNote}</p>
         </form>
       </div>
+
+      {toast && (
+        <div
+          role="status"
+          aria-live="polite"
+          className="pointer-events-none fixed top-1/2 left-1/2 z-50 w-[calc(100%-2rem)] max-w-sm -translate-x-1/2 -translate-y-1/2 rounded-lg border border-brand-cyan/70 bg-brand-black/95 px-4 py-3 shadow-lg"
+        >
+          <p className="text-sm font-bold text-brand-cyan">Mensaje Enviado</p>
+          <p className="mt-1 text-xs text-brand-muted">Nos comunicaremos a la brevedad</p>
+        </div>
+      )}
     </section>
   )
 }

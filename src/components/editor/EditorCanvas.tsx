@@ -11,7 +11,8 @@ import type { ImageLayer, Layer, ProductView, TextLayer } from '../../types'
 import type { CanvasMetrics } from '../../lib/canvasMetrics'
 import { getLoadedImage, loadImage } from '../../lib/images'
 import { resolveDrawableSrc } from '../../lib/storage'
-import { filterKey, getFilteredCanvas, isFilterNeutral } from '../../lib/imageFilters'
+import { filterKey, getRenderedCanvas, isFilterNeutral } from '../../lib/imageFilters'
+import { konvaFontStyle } from '../../lib/fonts'
 import { useLoadedImage } from '../../content/useLoadedImage'
 import { TextOverlay } from './TextOverlay'
 
@@ -268,13 +269,15 @@ function LayerNode({
   }, [layer])
 
   const key = layer.type === 'image' ? filterKey(layer.filters) : 'text'
+  const flipKey =
+    layer.type === 'image' ? `${layer.flipX ? 'x' : ''}${layer.flipY ? 'y' : ''}` : ''
 
   const drawable = useMemo<HTMLImageElement | HTMLCanvasElement | null>(() => {
     if (layer.type !== 'image' || !image) return null
-    if (isFilterNeutral(layer.filters)) return image
-    return getFilteredCanvas(image, layer.src, layer.filters)
+    if (isFilterNeutral(layer.filters) && !layer.flipX && !layer.flipY) return image
+    return getRenderedCanvas(image, layer.src, layer.filters, layer.flipX, layer.flipY)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [image, key])
+  }, [image, key, flipKey])
 
   const dragBoundFunc = useCallback(
     (pos: { x: number; y: number }) => {
@@ -298,8 +301,6 @@ function LayerNode({
         opacity={opacity}
         visible={visible && !isEditing}
         locked={locked}
-        flipX={layer.flipX}
-        flipY={layer.flipY}
         draggable={!locked && !isEditing}
         dragBoundFunc={dragBoundFunc}
         onClick={onSelect}
@@ -337,8 +338,7 @@ function LayerNode({
       height={height * scale}
       fontSize={layer.fontSize * scale}
       fontFamily={layer.fontFamily}
-      fontStyle={layer.fontStyle}
-      fontWeight={layer.fontWeight === 400 ? 'normal' : 'bold'}
+      fontStyle={konvaFontStyle(layer.fontStyle, layer.fontWeight)}
       fill={layer.fill}
       align={layer.align}
       letterSpacing={layer.letterSpacing * scale}

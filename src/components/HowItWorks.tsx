@@ -7,42 +7,47 @@ export function HowItWorks() {
   const { howItWorks } = content
 
   return (
-    <section id="como-funciona" className="scroll-mt-20 border-t border-brand-line py-10 md:py-16">
-      <div className="mx-auto max-w-7xl px-4">
-        <header className="mb-10">
+    <section
+      id="como-funciona"
+      className="scroll-mt-20 border-t border-brand-line py-10 md:py-16 lg:flex lg:h-[calc(100dvh-var(--nav-height))] lg:scroll-mt-[var(--nav-height)] lg:flex-col lg:py-6"
+    >
+      <div className="mx-auto w-full max-w-7xl px-4 lg:flex lg:h-full lg:min-h-0 lg:flex-col lg:justify-center">
+        <header className="mb-10 lg:mb-4">
           <p className="mb-2 text-xs font-bold uppercase tracking-widest text-brand-cyan">
             {howItWorks.eyebrow}
           </p>
-          <h2 className="font-display text-3xl uppercase tracking-tight sm:text-4xl">
+          <h2 className="font-display text-3xl uppercase tracking-tight sm:text-4xl lg:text-3xl xl:text-4xl">
             <RichTitle value={howItWorks.title} />
           </h2>
         </header>
 
-        <ol className="grid grid-cols-1 gap-3 md:grid-cols-3 md:gap-4">
+        <ol className="grid grid-cols-1 gap-3 md:grid-cols-3 md:gap-4 lg:gap-3">
           {howItWorks.steps.map((step, index) => (
             <li
               key={`${step.title}-${index}`}
-              className="relative rounded-lg border border-brand-line bg-brand-surface px-4 py-2.5 md:p-5"
+              className="relative rounded-lg border border-brand-line bg-brand-surface px-4 py-2.5 md:p-5 lg:p-4"
             >
-              <span className="font-display text-3xl text-brand-cyan/30 md:text-4xl">
+              <span className="font-display text-3xl text-brand-cyan/30 md:text-4xl lg:text-3xl">
                 {String(index + 1).padStart(2, '0')}
               </span>
-              <h3 className="mt-1 text-sm font-bold uppercase tracking-wide md:mt-2">{step.title}</h3>
-              <p className="mt-0.5 text-sm leading-relaxed text-brand-muted md:mt-1.5">
+              <h3 className="mt-1 text-sm font-bold uppercase tracking-wide md:mt-2 lg:mt-1">
+                {step.title}
+              </h3>
+              <p className="mt-0.5 text-sm leading-relaxed text-brand-muted md:mt-1.5 lg:mt-1 lg:text-xs xl:text-[13px]">
                 {step.body}
               </p>
             </li>
           ))}
         </ol>
 
-        <div className="mt-4 grid grid-cols-3 gap-1.5 md:gap-4">
+        <div className="mt-4 grid grid-cols-3 gap-1.5 md:gap-4 lg:mt-3 lg:gap-3">
           {howItWorks.features.map((feature, index) => (
             <div
               key={`${feature.title}-${index}`}
-              className="rounded-lg border border-brand-line bg-brand-black/40 p-2.5 md:p-5"
+              className="rounded-lg border border-brand-line bg-brand-black/40 p-2.5 md:p-5 lg:p-4"
             >
               <div
-                className={`mb-1.5 flex h-7 w-7 items-center justify-center md:mb-3 md:h-10 md:w-10 rounded-full border-2 text-sm md:text-lg ${
+                className={`mb-1.5 flex h-7 w-7 items-center justify-center rounded-full border-2 text-sm md:mb-3 md:h-10 md:w-10 md:text-lg lg:mb-2 lg:h-8 lg:w-8 lg:text-base ${
                   index === 0
                     ? 'border-brand-cyan text-brand-cyan'
                     : index === 1
@@ -52,20 +57,24 @@ export function HowItWorks() {
               >
                 {index === 0 ? '✓' : index === 1 ? '✎' : '→'}
               </div>
-              <h3 className="text-[10px] font-bold uppercase tracking-wide md:text-sm">{feature.title}</h3>
-              <p className="mt-0.5 text-[9px] leading-snug text-brand-muted md:mt-1 md:text-sm">{feature.body}</p>
+              <h3 className="text-[10px] font-bold uppercase tracking-wide md:text-sm lg:text-xs xl:text-sm">
+                {feature.title}
+              </h3>
+              <p className="mt-0.5 text-[9px] leading-snug text-brand-muted md:mt-1 md:text-sm lg:mt-1 lg:text-[11px] xl:text-xs">
+                {feature.body}
+              </p>
             </div>
           ))}
         </div>
 
-        <div className="mt-4 grid grid-cols-4 gap-2 md:gap-3">
+        <div className="mt-4 grid grid-cols-4 gap-2 md:gap-3 lg:mt-3 lg:min-h-0 lg:max-h-96 lg:flex-1 lg:grid-rows-1 lg:gap-3">
           {howItWorks.images.map((src, index) => (
             <MediaImage
               key={`${src}-${index}`}
               src={src}
               alt={`Trama ${index + 1}`}
               loading="lazy"
-              className="aspect-[3/4] w-full rounded-lg object-cover ring-1 ring-brand-line"
+              className="aspect-[3/4] w-full rounded-lg object-cover ring-1 ring-brand-line lg:h-full lg:min-h-0 lg:aspect-auto"
             />
           ))}
         </div>

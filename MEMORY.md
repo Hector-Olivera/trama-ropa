@@ -63,8 +63,19 @@ cambia, se reescribe acá. `AGENTS.md` tiene las reglas de trabajo y los comando
   zoom está **abajo a la izquierda** del lienzo (`bottom-4 left-4`).
 - **Móvil**: el menú de la barra es una hamburguesa (`Nav`) que lista **`nav.links`** del
   contenido (no hardcodear atajos: se editan en el admin); cierra al navegar y con Escape.
-  Las secciones usan `py-10 md:py-16` (el desktop conserva el espaciado grande) y las 4 fotos
-  de "Cómo funciona" van en una sola fila (`grid-cols-4`) también en mobile.
+  Las secciones usan `py-10 md:py-16` como base; desde `lg`, Inicio y Cómo funciona pasan a
+  alto de viewport (ver abajo) y las 4 fotos de "Cómo funciona" van en una sola fila
+  (`grid-cols-4`) también en mobile.
+- **Alto de Inicio y Cómo funciona (desktop)**: desde `lg`, ambas secciones miden
+  `calc(100dvh - var(--nav-height))` y usan `scroll-mt-[var(--nav-height)]`, así entran
+  completas debajo del nav. Inicio: grilla 2×2 flexible (`max-h-[36rem]`, `grid-rows-2`),
+  imágenes `h-full`/`aspect-auto`, sin el `translate-y` decorativo, y tipografía/márgenes
+  compactos. Cómo funciona: columna flex con header/cards/íconos compactos y grilla de 4
+  fotos `flex-1 min-h-0 max-h-96 grid-rows-1`; el `grid-rows-1` + `min-h-0` es clave para
+  que las fotos no impongan su relación 3:4 y desborden la sección. El bloque se centra
+  verticalmente en pantallas altas. Mobile/tablet no cambian. Verificado con Chrome headless
+  en 1024×768, 1280×720, 1366×768, 1440×900, 1536×864 y 1920×1080: sin overflow vertical
+  interno ni horizontal.
 - **Layout del editor**: el workspace mide `calc(100dvh - var(--nav-height))` (token
   `--nav-height: 60px` en `index.css`) y el ancla usa `scroll-mt` igual al nav; "Mis diseños" queda
   debajo. En `lg` es una grilla **30/70** (`minmax(0,3fr)` / `minmax(0,7fr)`): izquierda = header +

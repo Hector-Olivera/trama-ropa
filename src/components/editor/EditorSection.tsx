@@ -1,8 +1,9 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type Konva from 'konva'
+import { useAuth } from '../../admin/useAuth'
 import { useContent } from '../../content/ContentProvider'
 import { ZOOM_MIN, clampZoom, computeCanvasMetrics } from '../../lib/canvasMetrics'
-import { renderDesignBlob } from '../../lib/exportImage'
+import { exportDesign, renderDesignBlob } from '../../lib/exportImage'
 import { isSupabaseConfigured } from '../../lib/env'
 import { scrollToId } from '../../lib/scrollToId'
 import { mergeLoadedLayers, normalizeLayerStyles } from '../../lib/designLayers'
@@ -43,6 +44,7 @@ const isTypingTarget = (target: EventTarget | null): boolean =>
 
 export function EditorSection() {
   const { content } = useContent()
+  const { isAuthed, loading: authLoading } = useAuth()
   const {
     products,
     selectedId: productId,
@@ -96,6 +98,9 @@ export function EditorSection() {
   const [savingAsNew, setSavingAsNew] = useState(false)
   const [newName, setNewName] = useState('')
   const [designLimitNotice, setDesignLimitNotice] = useState(false)
+  const [exporting, setExporting] = useState(false)
+  const [downloadError, setDownloadError] = useState<string | null>(null)
+  const canDownload = isAuthed && !authLoading
   const layerCount = editor.layers.length
   const atLayerLimit = layerCount >= MAX_LAYERS
   const versions = useMemo(
@@ -274,6 +279,29 @@ export function EditorSection() {
       designSnapshot,
     )
   }, [attachment, designSnapshot, metrics, product])
+
+  const handleDownload = useCallback(async () => {
+    const stage = stageRef.current
+    if (!stage || !product || exporting) return
+    setDownloadError(null)
+    setExporting(true)
+    try {
+      await exportDesign(
+        stage,
+        {
+          displayScale: metrics.scale,
+          offsetX: metrics.offsetX,
+          offsetY: metrics.offsetY,
+        },
+        product,
+        { scale: 3, format: 'png', fileName: designName },
+      )
+    } catch {
+      setDownloadError('No se pudo descargar el diseño.')
+    } finally {
+      setExporting(false)
+    }
+  }, [designName, exporting, metrics, product])
 
   const handleSaveJump = useCallback(() => {
     setHighlightSaved(true)
@@ -553,7 +581,16 @@ export function EditorSection() {
                   isAlreadyAttached={isAlreadyAttached}
                   onSaveJump={handleSaveJump}
                   isSaved={isCurrentSaved}
+                  canDownload={canDownload}
+                  onDownload={() => void handleDownload()}
+                  isExporting={exporting}
                 />
+
+                {downloadError && (
+                  <p role="alert" className="mt-2 text-[11px] text-brand-pink">
+                    {downloadError}
+                  </p>
+                )}
 
                 <div className="relative mt-3 lg:min-h-0 lg:flex-1">
                   <div

@@ -110,6 +110,11 @@ cambia, se reescribe acá. `AGENTS.md` tiene las reglas de trabajo y los comando
   `pointerdown`/`scroll` en `window` los descarta (sin timers, así no quedan pegados). Adjuntar
   nunca navega: si falta guardar sólo destella "Guardar" (`animate-glow-pulse`, 3 s) y avisa;
   un diseño ya adjuntado (misma firma) muestra "Este diseño ya está adjuntado" y no se resube.
+- **Descarga admin-only** (`EditorSection` + `EditorToolbar`): con sesión admin aparece
+  "Descargar" junto a Guardar/Adjuntar; usa `exportDesign` para bajar el diseño actual en PNG 3x
+  (aunque no esté guardado). El gate sale de `useAuth`: en modo local depende del `localStorage`
+  de ese navegador; con Supabase, de la sesión iniciada. Es visibilidad, no seguridad. Sin capas
+  o mientras exporta queda deshabilitado; si falla muestra un aviso breve.
 - **Selector de prenda**: el **carrusel es para mobile** (`lg:hidden`), no para el desktop. Va
   en una fila con **scroll horizontal sin barra visible** (clase `.trama-strip`: `scrollbar-width:
   none` + `::-webkit-scrollbar { display: none }`), snap, y **flechas `‹ ›`** translúcidas

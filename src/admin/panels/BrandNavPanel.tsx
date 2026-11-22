@@ -13,8 +13,12 @@ export function BrandNavPanel({ draft, update }: PanelProps) {
   const preview = draft.brand.mark
 
   return (
-    <div className="space-y-4">
-      <SectionCard title="Marca" description="Nombre y logo de la barra superior y el pie.">
+    <div className="grid gap-4 xl:grid-cols-12">
+      <SectionCard
+        title="Marca"
+        description="Nombre y logo de la barra superior y el pie."
+        className="xl:col-span-6"
+      >
         <TextField
           label="Nombre"
           value={draft.brand.name}
@@ -28,15 +32,38 @@ export function BrandNavPanel({ draft, update }: PanelProps) {
         />
       </SectionCard>
 
-      <SectionCard title="Navegación" description="Links del menú superior.">
+      <SectionCard
+        title="Botón principal"
+        description="El CTA destacado de la barra."
+        className="xl:col-span-6"
+        contentClassName="grid gap-3 sm:grid-cols-2"
+      >
+        <TextField
+          label="Texto"
+          value={draft.nav.cta.label}
+          onChange={(label) => setNavCta({ label })}
+        />
+        <TextField
+          label="Destino"
+          value={draft.nav.cta.href}
+          onChange={(href) => setNavCta({ href })}
+        />
+      </SectionCard>
+
+      <SectionCard
+        title="Navegación"
+        description="Links del menú superior."
+        className="xl:col-span-12"
+      >
         <RepeatableList
           items={draft.nav.links}
           onChange={(links) => setNav({ links })}
           create={() => ({ id: newId(), href: '#', label: 'Nuevo link' })}
           label={(item) => item.label || 'Link'}
           addLabel="Agregar link"
+          itemsClassName="grid gap-2 sm:grid-cols-2 xl:grid-cols-[repeat(auto-fit,minmax(16rem,1fr))]"
           render={(item, updateItem) => (
-            <>
+            <div className="grid gap-2 sm:grid-cols-2">
               <TextField
                 label="Texto"
                 value={item.label}
@@ -48,21 +75,8 @@ export function BrandNavPanel({ draft, update }: PanelProps) {
                 onChange={(href) => updateItem({ href })}
                 hint="Ej: #editor, #catalogo o https://..."
               />
-            </>
+            </div>
           )}
-        />
-      </SectionCard>
-
-      <SectionCard title="Botón principal" description="El CTA destacado de la barra.">
-        <TextField
-          label="Texto"
-          value={draft.nav.cta.label}
-          onChange={(label) => setNavCta({ label })}
-        />
-        <TextField
-          label="Destino"
-          value={draft.nav.cta.href}
-          onChange={(href) => setNavCta({ href })}
         />
       </SectionCard>
     </div>

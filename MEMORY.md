@@ -76,6 +76,19 @@ cambia, se reescribe acá. `AGENTS.md` tiene las reglas de trabajo y los comando
   verticalmente en pantallas altas. Mobile/tablet no cambian. Verificado con Chrome headless
   en 1024×768, 1280×720, 1366×768, 1440×900, 1536×864 y 1920×1080: sin overflow vertical
   interno ni horizontal.
+- **Admin (layout)**: el dashboard usa `max-w-[1600px]` y, desde `xl`, cada panel se arma
+  con una grilla de 12 columnas (`gap-4`); debajo de `xl` sigue apilado. Marca y CTA van 6+6,
+  Navegación ocupa 12 con links `auto-fit` (una fila en desktop), Catálogo 5 columnas en `xl`,
+  Editor 4 columnas en `2xl` (nombre y slug apilados dentro de cada prenda para que no se
+  recorten), Pasos/Beneficios 6+6, Contacto 6+6 y Footer frase 1/3 + links 2/3.
+  `RepeatableList`, `ImageListField` y `SectionCard` aceptan clases de grilla; la lógica de
+  agregar/quitar/reordenar no cambia. Mobile conserva el apilado anterior. El subtítulo del
+  editor usa 5 filas y `SectionCard` acepta `actions` en el header.
+- **Admin (filtros)**: el filtro de Prendas reutiliza `FilterChip` de la landing; es estado
+  local del panel (no entra al draft). `RepeatableList` oculta los items que no matchean con
+  `hidden` (sin cambiar el array) y salta los ocultos al reordenar; el botón
+  "+ Agregar prenda" vive en el header del card. Al agregar con un filtro activo, la prenda
+  se crea con esa categoría para que quede visible.
 - **Layout del editor**: el workspace mide `calc(100dvh - var(--nav-height))` (token
   `--nav-height: 60px` en `index.css`) y el ancla usa `scroll-mt` igual al nav; "Mis diseños" queda
   debajo. En `lg` es una grilla **30/70** (`minmax(0,3fr)` / `minmax(0,7fr)`): izquierda = header +

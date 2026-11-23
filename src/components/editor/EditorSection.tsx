@@ -296,8 +296,14 @@ export function EditorSection() {
         product,
         { scale: 3, format: 'png', fileName: designName },
       )
-    } catch {
-      setDownloadError('No se pudo descargar el diseño.')
+    } catch (error) {
+      console.error('No se pudo descargar el diseño:', error)
+      const securityError = error instanceof DOMException && error.name === 'SecurityError'
+      setDownloadError(
+        securityError
+          ? 'La imagen de la prenda no permite exportar el diseño.'
+          : 'No se pudo descargar el diseño.',
+      )
     } finally {
       setExporting(false)
     }

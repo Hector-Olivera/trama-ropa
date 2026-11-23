@@ -27,6 +27,9 @@ cambia, se reescribe acá. `AGENTS.md` tiene las reglas de trabajo y los comando
   `Konva.Filters` + `cache()` (rompe el `Transformer`); texto con `<textarea>` DOM
   (`TextOverlay`), no `Konva.Text`; la prenda base se dibuja con `useLoadedImage` (resuelve el
   `MediaRef`), nunca con el src crudo.
+- **Imágenes remotas y export**: `loadImage` (`lib/images.ts`) setea `crossOrigin="anonymous"`
+  para URLs `http(s)`. Las prendas del catálogo viven en Supabase Storage; sin eso el canvas
+  queda *tainted* y `toDataURL` falla al descargar o adjuntar. Storage responde CORS `*`.
 - **Voltear imágenes**: Konva **no** tiene `flipX`/`flipY` como props. El espejado se
   pre-renderiza en `getRenderedCanvas` (`lib/imageFilters.ts`) con `translate` + `scale(-1)`,
   cacheado por `src + filtro + flips`; nunca con `scaleX` negativo en el nodo (rompe el

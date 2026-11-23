@@ -10,6 +10,10 @@ type Props<T extends Item> = {
   label: (item: T, index: number) => string
   addLabel?: string
   emptyLabel?: string
+  itemsClassName?: string
+  itemClassName?: string
+  isItemHidden?: (item: T) => boolean
+  showAddButton?: boolean
 }
 
 /**
@@ -28,9 +32,21 @@ export function RepeatableList<T extends Item>({
   label,
   addLabel = 'Agregar',
   emptyLabel,
+  itemsClassName = 'space-y-2',
+  itemClassName = 'p-3',
+  isItemHidden,
+  showAddButton = true,
 }: Props<T>) {
+  const moveTarget = (index: number, delta: number) => {
+    let target = index + delta
+    while (target >= 0 && target < items.length && isItemHidden?.(items[target])) {
+      target += delta
+    }
+    return target
+  }
+
   const move = (index: number, delta: number) => {
-    const target = index + delta
+    const target = moveTarget(index, delta)
     if (target < 0 || target >= items.length) return
     const next = [...items]
     const [moved] = next.splice(index, 1)
@@ -48,41 +64,54 @@ export function RepeatableList<T extends Item>({
         <p className="text-[11px] text-brand-muted">{emptyLabel}</p>
       )}
 
-      {items.map((item, index) => (
-        <div key={item.id} className="rounded border border-brand-line bg-brand-black/40 p-3">
-          <div className="mb-2 flex items-center gap-2">
-            <span className="truncate text-[11px] font-semibold text-brand-muted">
-              {label(item, index)}
-            </span>
-            <div className="ml-auto flex gap-1">
-              <IconBtn onClick={() => move(index, -1)} disabled={index === 0} title="Subir">
-                ↑
-              </IconBtn>
-              <IconBtn
-                onClick={() => move(index, 1)}
-                disabled={index === items.length - 1}
-                title="Bajar"
-              >
-                ↓
-              </IconBtn>
-              <IconBtn onClick={() => remove(index)} title="Quitar" danger>
-                ×
-              </IconBtn>
+      <div className={itemsClassName}>
+        {items.map((item, index) => (
+          <div
+            key={item.id}
+            className={`rounded border border-brand-line bg-brand-black/40 ${itemClassName}${
+              isItemHidden?.(item) ? ' hidden' : ''
+            }`}
+          >
+            <div className="mb-2 flex items-center gap-2">
+              <span className="truncate text-[11px] font-semibold text-brand-muted">
+                {label(item, index)}
+              </span>
+              <div className="ml-auto flex gap-1">
+                <IconBtn
+                  onClick={() => move(index, -1)}
+                  disabled={moveTarget(index, -1) < 0}
+                  title="Subir"
+                >
+                  ↑
+                </IconBtn>
+                <IconBtn
+                  onClick={() => move(index, 1)}
+                  disabled={moveTarget(index, 1) >= items.length}
+                  title="Bajar"
+                >
+                  ↓
+                </IconBtn>
+                <IconBtn onClick={() => remove(index)} title="Quitar" danger>
+                  ×
+                </IconBtn>
+              </div>
+            </div>
+            <div className="space-y-2">
+              {render(item, (patch) => update(index, patch), index)}
             </div>
           </div>
-          <div className="space-y-2">
-            {render(item, (patch) => update(index, patch), index)}
-          </div>
-        </div>
-      ))}
+        ))}
+      </div>
 
-      <button
-        type="button"
-        onClick={() => onChange([...items, create()])}
-        className="w-full rounded border border-dashed border-brand-line px-3 py-2 text-[11px] font-semibold text-brand-muted transition hover:border-brand-cyan hover:text-brand-cyan"
-      >
-        + {addLabel}
-      </button>
+      {showAddButton && (
+        <button
+          type="button"
+          onClick={() => onChange([...items, create()])}
+          className="w-full rounded border border-dashed border-brand-line px-3 py-2 text-[11px] font-semibold text-brand-muted transition hover:border-brand-cyan hover:text-brand-cyan"
+        >
+          + {addLabel}
+        </button>
+      )}
     </div>
   )
 }

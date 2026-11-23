@@ -27,6 +27,9 @@ cambia, se reescribe acá. `AGENTS.md` tiene las reglas de trabajo y los comando
   `Konva.Filters` + `cache()` (rompe el `Transformer`); texto con `<textarea>` DOM
   (`TextOverlay`), no `Konva.Text`; la prenda base se dibuja con `useLoadedImage` (resuelve el
   `MediaRef`), nunca con el src crudo.
+- **Imágenes remotas y export**: `loadImage` (`lib/images.ts`) setea `crossOrigin="anonymous"`
+  para URLs `http(s)`. Las prendas del catálogo viven en Supabase Storage; sin eso el canvas
+  queda *tainted* y `toDataURL` falla al descargar o adjuntar. Storage responde CORS `*`.
 - **Voltear imágenes**: Konva **no** tiene `flipX`/`flipY` como props. El espejado se
   pre-renderiza en `getRenderedCanvas` (`lib/imageFilters.ts`) con `translate` + `scale(-1)`,
   cacheado por `src + filtro + flips`; nunca con `scaleX` negativo en el nodo (rompe el
@@ -76,6 +79,19 @@ cambia, se reescribe acá. `AGENTS.md` tiene las reglas de trabajo y los comando
   verticalmente en pantallas altas. Mobile/tablet no cambian. Verificado con Chrome headless
   en 1024×768, 1280×720, 1366×768, 1440×900, 1536×864 y 1920×1080: sin overflow vertical
   interno ni horizontal.
+- **Admin (layout)**: el dashboard usa `max-w-[1600px]` y, desde `xl`, cada panel se arma
+  con una grilla de 12 columnas (`gap-4`); debajo de `xl` sigue apilado. Marca y CTA van 6+6,
+  Navegación ocupa 12 con links `auto-fit` (una fila en desktop), Catálogo 5 columnas en `xl`,
+  Editor 4 columnas en `2xl` (nombre y slug apilados dentro de cada prenda para que no se
+  recorten), Pasos/Beneficios 6+6, Contacto 6+6 y Footer frase 1/3 + links 2/3.
+  `RepeatableList`, `ImageListField` y `SectionCard` aceptan clases de grilla; la lógica de
+  agregar/quitar/reordenar no cambia. Mobile conserva el apilado anterior. El subtítulo del
+  editor usa 5 filas y `SectionCard` acepta `actions` en el header.
+- **Admin (filtros)**: el filtro de Prendas reutiliza `FilterChip` de la landing; es estado
+  local del panel (no entra al draft). `RepeatableList` oculta los items que no matchean con
+  `hidden` (sin cambiar el array) y salta los ocultos al reordenar; el botón
+  "+ Agregar prenda" vive en el header del card. Al agregar con un filtro activo, la prenda
+  se crea con esa categoría para que quede visible.
 - **Layout del editor**: el workspace mide `calc(100dvh - var(--nav-height))` (token
   `--nav-height: 60px` en `index.css`) y el ancla usa `scroll-mt` igual al nav; "Mis diseños" queda
   debajo. En `lg` es una grilla **30/70** (`minmax(0,3fr)` / `minmax(0,7fr)`): izquierda = header +
@@ -97,6 +113,11 @@ cambia, se reescribe acá. `AGENTS.md` tiene las reglas de trabajo y los comando
   `pointerdown`/`scroll` en `window` los descarta (sin timers, así no quedan pegados). Adjuntar
   nunca navega: si falta guardar sólo destella "Guardar" (`animate-glow-pulse`, 3 s) y avisa;
   un diseño ya adjuntado (misma firma) muestra "Este diseño ya está adjuntado" y no se resube.
+- **Descarga admin-only** (`EditorSection` + `EditorToolbar`): con sesión admin aparece
+  "Descargar" junto a Guardar/Adjuntar; usa `exportDesign` para bajar el diseño actual en PNG 3x
+  (aunque no esté guardado). El gate sale de `useAuth`: en modo local depende del `localStorage`
+  de ese navegador; con Supabase, de la sesión iniciada. Es visibilidad, no seguridad. Sin capas
+  o mientras exporta queda deshabilitado; si falla muestra un aviso breve.
 - **Selector de prenda**: el **carrusel es para mobile** (`lg:hidden`), no para el desktop. Va
   en una fila con **scroll horizontal sin barra visible** (clase `.trama-strip`: `scrollbar-width:
   none` + `::-webkit-scrollbar { display: none }`), snap, y **flechas `‹ ›`** translúcidas

@@ -14,8 +14,8 @@ export function RichTitleField({
   const patch = (partial: Partial<RichTitle>) => onChange({ ...value, ...partial })
 
   return (
-    <div className="space-y-2 rounded border border-brand-line bg-brand-black/40 p-3">
-      <span className="block text-[11px] font-semibold uppercase tracking-wider text-brand-muted">
+    <div className="space-y-2 rounded border border-brand-line bg-brand-black/40 p-3 xl:grid xl:grid-cols-3 xl:gap-2 xl:space-y-0">
+      <span className="block text-[11px] font-semibold uppercase tracking-wider text-brand-muted xl:col-span-3">
         {label}
       </span>
       <TextField label="Antes" value={value.before} onChange={(v) => patch({ before: v })} />
@@ -29,11 +29,13 @@ export function RichTitleField({
         value={value.after ?? ''}
         onChange={(v) => patch({ after: v || undefined })}
       />
-      <CheckboxField
-        label="Salto de línea antes del resaltado"
-        checked={value.breakBefore ?? false}
-        onChange={(checked) => patch({ breakBefore: checked || undefined })}
-      />
+      <div className="xl:col-span-3">
+        <CheckboxField
+          label="Salto de línea antes del resaltado"
+          checked={value.breakBefore ?? false}
+          onChange={(checked) => patch({ breakBefore: checked || undefined })}
+        />
+      </div>
     </div>
   )
 }

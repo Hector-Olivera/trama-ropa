@@ -20,6 +20,7 @@ export function loadImage(src: string): Promise<HTMLImageElement> {
   const promise = new Promise<HTMLImageElement>((resolve, reject) => {
     const image = new Image()
     image.decoding = 'async'
+    if (/^https?:\/\//i.test(src)) image.crossOrigin = 'anonymous'
     image.onload = () => {
       imageCache.set(src, image)
       inflight.delete(src)

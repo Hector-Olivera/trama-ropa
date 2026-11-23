@@ -11,8 +11,12 @@ export function HeroPanel({ draft, update }: PanelProps) {
   const setSecondary = useSectionField(update, 'hero', 'secondary')
 
   return (
-    <div className="space-y-4">
-      <SectionCard title="Texto del inicio" description="Lo primero que se ve al entrar.">
+    <div className="grid gap-4 xl:grid-cols-12">
+      <SectionCard
+        title="Texto del inicio"
+        description="Lo primero que se ve al entrar."
+        className="xl:col-span-6"
+      >
         <TextField
           label="Antetítulo"
           value={draft.hero.eyebrow}
@@ -22,12 +26,14 @@ export function HeroPanel({ draft, update }: PanelProps) {
           label="Subtítulo"
           value={draft.hero.subtitle}
           onChange={(subtitle) => setHero({ subtitle })}
+          rows={2}
         />
       </SectionCard>
 
       <SectionCard
         title="Título"
         description="Una entrada por línea. Marcá las que van resaltadas en cyan."
+        className="xl:col-span-6"
       >
         <RepeatableList
           items={draft.hero.titleLines}
@@ -35,6 +41,8 @@ export function HeroPanel({ draft, update }: PanelProps) {
           create={() => ({ id: newId(), text: 'Nueva línea' })}
           label={(item) => item.text || 'Línea'}
           addLabel="Agregar línea"
+          itemsClassName="grid gap-2 xl:grid-cols-3"
+          itemClassName="p-2.5"
           render={(item, updateItem) => (
             <>
               <TextField label="Texto" value={item.text} onChange={(text) => updateItem({ text })} />
@@ -48,7 +56,12 @@ export function HeroPanel({ draft, update }: PanelProps) {
         />
       </SectionCard>
 
-      <SectionCard title="Botones" description="Los dos llamados a la acción del inicio.">
+      <SectionCard
+        title="Botones"
+        description="Los dos llamados a la acción del inicio."
+        className="xl:col-span-6"
+        contentClassName="grid gap-3 sm:grid-cols-2"
+      >
         <TextField
           label="Botón principal"
           value={draft.hero.primary.label}
@@ -71,13 +84,19 @@ export function HeroPanel({ draft, update }: PanelProps) {
         />
       </SectionCard>
 
-      <SectionCard title="Estadísticas" description="Los tres números bajo los botones.">
+      <SectionCard
+        title="Estadísticas"
+        description="Los tres números bajo los botones."
+        className="xl:col-span-6"
+      >
         <RepeatableList
           items={draft.hero.stats}
           onChange={(stats) => setHero({ stats })}
           create={() => ({ id: newId(), value: '0', label: 'Nueva' })}
           label={(item) => `${item.value} · ${item.label}`}
           addLabel="Agregar estadística"
+          itemsClassName="grid gap-2 sm:grid-cols-3"
+          itemClassName="p-2.5"
           render={(item, updateItem) => (
             <>
               <TextField label="Valor" value={item.value} onChange={(value) => updateItem({ value })} />
@@ -87,11 +106,16 @@ export function HeroPanel({ draft, update }: PanelProps) {
         />
       </SectionCard>
 
-      <SectionCard title="Imágenes" description="Las 4 fotos que acompañan al slogan.">
+      <SectionCard
+        title="Imágenes"
+        description="Las 4 fotos que acompañan al slogan."
+        className="xl:col-span-12"
+      >
         <ImageListField
           label="Galería del inicio"
           images={draft.hero.images}
           onChange={(images) => setHero({ images })}
+          gridClassName="grid gap-2 sm:grid-cols-2 xl:grid-cols-4"
         />
       </SectionCard>
     </div>

@@ -112,11 +112,13 @@ export function ImageListField({
   images,
   onChange,
   addLabel = 'Agregar imagen',
+  gridClassName = 'grid gap-2 sm:grid-cols-2',
 }: {
   label: string
   images: MediaRef[]
   onChange: (images: MediaRef[]) => void
   addLabel?: string
+  gridClassName?: string
 }) {
   const move = (index: number, delta: number) => {
     const target = index + delta
@@ -133,7 +135,7 @@ export function ImageListField({
         {label}
       </span>
 
-      <div className="grid gap-2 sm:grid-cols-2">
+      <div className={gridClassName}>
         {images.map((src, index) => (
           <div key={index} className="rounded border border-brand-line bg-brand-black/40 p-2">
             <ImageField

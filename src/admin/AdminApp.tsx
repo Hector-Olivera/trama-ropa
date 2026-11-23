@@ -132,7 +132,7 @@ function Dashboard({
   return (
     <div className="min-h-screen">
       <header className="sticky top-0 z-20 border-b border-brand-line bg-brand-black/95 backdrop-blur">
-        <div className="mx-auto flex max-w-5xl flex-wrap items-center gap-2 px-4 py-3">
+        <div className="mx-auto flex max-w-[1600px] flex-wrap items-center gap-2 px-4 py-3">
           <h1 className="mr-2 text-sm font-bold uppercase tracking-widest text-brand-cyan">
             Panel Trama
           </h1>
@@ -159,7 +159,7 @@ function Dashboard({
               type="button"
               onClick={() => void handleSave()}
               disabled={!dirty || saving}
-              className="rounded bg-brand-cyan px-3 py-1.5 text-[11px] font-bold text-brand-black transition hover:bg-brand-pink hover:text-white disabled:opacity-40"
+              className="rounded bg-brand-cyan px-2.5 py-1.5 text-[11px] font-bold text-brand-black transition hover:bg-brand-pink hover:text-white disabled:opacity-40"
             >
               {saving ? 'Guardando...' : 'Guardar'}
             </button>
@@ -167,18 +167,18 @@ function Dashboard({
         </div>
 
         {saveError && (
-          <p role="alert" className="mx-auto max-w-5xl px-4 pb-2 text-[11px] text-brand-pink">
+          <p role="alert" className="mx-auto max-w-[1600px] px-4 pb-2 text-[11px] text-brand-pink">
             {saveError}
           </p>
         )}
 
-        <nav className="mx-auto flex max-w-5xl gap-1 overflow-x-auto px-4 pb-2">
+        <nav className="mx-auto flex max-w-[1600px] gap-1 overflow-x-auto px-4 pb-2">
           {PANELS.map((entry) => (
             <NavLink
               key={entry.slug}
               to={`/admin/${entry.slug}`}
               className={({ isActive }) =>
-                `whitespace-nowrap rounded-t px-3 py-1.5 text-[11px] font-semibold transition ${
+                `whitespace-nowrap rounded-t px-2.5 py-1.5 text-[11px] font-semibold transition ${
                   isActive ? 'bg-brand-surface text-brand-cyan' : 'text-brand-muted hover:text-brand-light'
                 }`
               }
@@ -189,7 +189,7 @@ function Dashboard({
           <NavLink
             to="/admin/seguridad"
             className={({ isActive }) =>
-              `ml-auto whitespace-nowrap rounded-t px-3 py-1.5 text-[11px] font-semibold transition ${
+              `ml-auto whitespace-nowrap rounded-t px-2.5 py-1.5 text-[11px] font-semibold transition ${
                 isActive ? 'bg-brand-surface text-brand-cyan' : 'text-brand-muted hover:text-brand-light'
               }`
             }
@@ -199,7 +199,7 @@ function Dashboard({
         </nav>
       </header>
 
-      <main className="mx-auto max-w-5xl px-4 py-6">
+      <main className="mx-auto max-w-[1600px] px-4 py-6">
         <SectionBoundary key={location.pathname}>
           <Outlet context={context} />
         </SectionBoundary>
@@ -220,7 +220,7 @@ function SecurityPanel() {
   }
 
   return (
-    <div className="space-y-4">
+    <div className="grid gap-4 xl:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
       <section className="space-y-3 rounded-lg border border-brand-line bg-brand-surface p-4">
         <h2 className="text-[11px] font-bold uppercase tracking-widest text-brand-muted">
           Seguridad
@@ -316,14 +316,14 @@ function ChangePasswordForm({
       <div className="flex gap-2">
         <button
           type="submit"
-          className="rounded border border-brand-line px-3 py-1.5 text-[11px] font-semibold text-brand-light transition hover:border-brand-cyan hover:text-brand-cyan"
+          className="rounded border border-brand-line px-2.5 py-1.5 text-[11px] font-semibold text-brand-light transition hover:border-brand-cyan hover:text-brand-cyan"
         >
           Cambiar contraseña
         </button>
         <button
           type="button"
           onClick={onLogout}
-          className="rounded border border-brand-line px-3 py-1.5 text-[11px] font-semibold text-brand-muted transition hover:border-brand-pink hover:text-brand-pink"
+          className="rounded border border-brand-line px-2.5 py-1.5 text-[11px] font-semibold text-brand-muted transition hover:border-brand-pink hover:text-brand-pink"
         >
           Cerrar sesión
         </button>

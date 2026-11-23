@@ -9,8 +9,12 @@ export function EditorPanel({ draft, update }: PanelProps) {
   const setEditor = useSection(update, 'editor')
 
   return (
-    <div className="space-y-4">
-      <SectionCard title="Textos del editor" description="Encabezado de la sección de personalización.">
+    <div className="grid gap-4 xl:grid-cols-12">
+      <SectionCard
+        title="Textos del editor"
+        description="Encabezado de la sección de personalización."
+        className="xl:col-span-4"
+      >
         <TextField
           label="Antetítulo"
           value={draft.editor.eyebrow}
@@ -25,12 +29,14 @@ export function EditorPanel({ draft, update }: PanelProps) {
           label="Subtítulo"
           value={draft.editor.subtitle}
           onChange={(subtitle) => setEditor({ subtitle })}
+          rows={5}
         />
       </SectionCard>
 
       <SectionCard
         title="Prendas base"
         description="Las imágenes sobre las que el visitante estampa. Subí un PNG; el tamaño se calcula solo."
+        className="xl:col-span-8"
       >
         <RepeatableList
           items={draft.editor.products}
@@ -45,26 +51,30 @@ export function EditorPanel({ draft, update }: PanelProps) {
           })}
           label={(item) => item.label || 'Prenda'}
           addLabel="Agregar prenda"
+          itemsClassName="grid gap-2 xl:grid-cols-2 2xl:grid-cols-4"
+          itemClassName="p-2.5"
           render={(item, updateItem) => (
             <>
               <ImageField
                 label="Imagen (PNG)"
                 value={item.src}
-                previewClassName="h-24 w-20"
+                previewClassName="h-20 w-16"
                 onChange={(src) => updateItem({ src })}
                 onUploaded={({ src, width, height }) => updateItem({ src, width, height })}
               />
-              <TextField
-                label="Nombre"
-                value={item.label}
-                onChange={(label) => updateItem({ label })}
-              />
-              <TextField
-                label="Slug (para el archivo exportado)"
-                value={item.slug}
-                onChange={(slug) => updateItem({ slug })}
-                hint="Solo minúsculas, números y guiones."
-              />
+              <div className="grid gap-2">
+                <TextField
+                  label="Nombre"
+                  value={item.label}
+                  onChange={(label) => updateItem({ label })}
+                />
+                <TextField
+                  label="Slug (para el archivo exportado)"
+                  value={item.slug}
+                  onChange={(slug) => updateItem({ slug })}
+                  hint="Solo minúsculas, números y guiones."
+                />
+              </div>
               <p className="text-[10px] text-brand-muted">
                 Tamaño: {item.width} × {item.height} px
               </p>

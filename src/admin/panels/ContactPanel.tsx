@@ -9,8 +9,12 @@ export function ContactPanel({ draft, update }: PanelProps) {
   const setEmail = useSectionField(update, 'contact', 'email')
 
   return (
-    <div className="space-y-4">
-      <SectionCard title="Encabezado" description="Textos de la sección de contacto.">
+    <div className="grid gap-4 xl:grid-cols-12">
+      <SectionCard
+        title="Encabezado"
+        description="Textos de la sección de contacto."
+        className="xl:col-span-6"
+      >
         <TextField
           label="Antetítulo"
           value={draft.contact.eyebrow}
@@ -25,10 +29,34 @@ export function ContactPanel({ draft, update }: PanelProps) {
           label="Texto"
           value={draft.contact.body}
           onChange={(body) => setContact({ body })}
+          rows={2}
         />
       </SectionCard>
 
-      <SectionCard title="WhatsApp" description="Botón y número.">
+      <SectionCard
+        title="Formulario"
+        description="Título y nota al pie del formulario."
+        className="xl:col-span-6"
+      >
+        <TextField
+          label="Título del formulario"
+          value={draft.contact.formTitle}
+          onChange={(formTitle) => setContact({ formTitle })}
+        />
+        <TextAreaField
+          label="Nota al pie"
+          value={draft.contact.formNote}
+          onChange={(formNote) => setContact({ formNote })}
+          rows={2}
+        />
+      </SectionCard>
+
+      <SectionCard
+        title="WhatsApp"
+        description="Botón y número."
+        className="xl:col-span-6"
+        contentClassName="grid gap-3 xl:grid-cols-3"
+      >
         <TextField
           label="Etiqueta"
           value={draft.contact.whatsapp.label}
@@ -47,7 +75,12 @@ export function ContactPanel({ draft, update }: PanelProps) {
         />
       </SectionCard>
 
-      <SectionCard title="Email" description="Botón y dirección.">
+      <SectionCard
+        title="Email"
+        description="Botón y dirección."
+        className="xl:col-span-6"
+        contentClassName="grid gap-3 xl:grid-cols-3"
+      >
         <TextField
           label="Etiqueta"
           value={draft.contact.email.label}
@@ -63,19 +96,6 @@ export function ContactPanel({ draft, update }: PanelProps) {
           value={draft.contact.email.href}
           onChange={(href) => setEmail({ href })}
           hint="Ej: mailto:hola@tramaropa.com.ar"
-        />
-      </SectionCard>
-
-      <SectionCard title="Formulario" description="Título y nota al pie del formulario.">
-        <TextField
-          label="Título del formulario"
-          value={draft.contact.formTitle}
-          onChange={(formTitle) => setContact({ formTitle })}
-        />
-        <TextAreaField
-          label="Nota al pie"
-          value={draft.contact.formNote}
-          onChange={(formNote) => setContact({ formNote })}
         />
       </SectionCard>
     </div>

@@ -14,10 +14,13 @@ type Overrides = {
   isAlreadyAttached?: boolean
   attachState?: AttachmentStatus
   hasLayers?: boolean
+  canDownload?: boolean
+  isExporting?: boolean
 }
 
 function renderToolbar(overrides: Overrides = {}) {
   const onAttach = vi.fn()
+  const onDownload = vi.fn()
   render(
     <EditorToolbar
       canUndo
@@ -33,9 +36,12 @@ function renderToolbar(overrides: Overrides = {}) {
       isAlreadyAttached={overrides.isAlreadyAttached ?? false}
       onSaveJump={() => {}}
       isSaved={overrides.isSaved ?? false}
+      canDownload={overrides.canDownload ?? false}
+      onDownload={onDownload}
+      isExporting={overrides.isExporting ?? false}
     />,
   )
-  return { onAttach }
+  return { onAttach, onDownload }
 }
 
 function attachButton() {
@@ -114,5 +120,35 @@ describe('EditorToolbar', () => {
 
     fireEvent.pointerDown(document.body)
     expect(screen.queryByRole('status')).toBeNull()
+  })
+
+  it('oculta descargar cuando no hay sesión admin', () => {
+    renderToolbar()
+
+    expect(screen.queryByRole('button', { name: 'Descargar' })).toBeNull()
+  })
+
+  it('descarga el diseño con sesión admin', () => {
+    const { onDownload } = renderToolbar({ canDownload: true })
+
+    fireEvent.click(screen.getByRole('button', { name: 'Descargar' }))
+
+    expect(onDownload).toHaveBeenCalledTimes(1)
+  })
+
+  it('deshabilita descargar sin capas', () => {
+    renderToolbar({ canDownload: true, hasLayers: false })
+
+    expect((screen.getByRole('button', { name: 'Descargar' }) as HTMLButtonElement).disabled).toBe(
+      true,
+    )
+  })
+
+  it('deshabilita descargar mientras exporta', () => {
+    renderToolbar({ canDownload: true, isExporting: true })
+
+    expect(
+      (screen.getByRole('button', { name: 'Descargando...' }) as HTMLButtonElement).disabled,
+    ).toBe(true)
   })
 })

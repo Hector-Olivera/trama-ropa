@@ -19,6 +19,9 @@ type Props = {
   isAlreadyAttached: boolean
   onSaveJump: () => void
   isSaved: boolean
+  canDownload: boolean
+  onDownload: () => void
+  isExporting: boolean
 }
 
 const GLOW_DURATION = 3000
@@ -45,6 +48,9 @@ export function EditorToolbar({
   isAlreadyAttached,
   onSaveJump,
   isSaved,
+  canDownload,
+  onDownload,
+  isExporting,
 }: Props) {
   const atLimit = attachmentCount >= MAX_ATTACHMENTS
   const attaching = attachState === 'rendering' || attachState === 'uploading'
@@ -152,6 +158,17 @@ export function EditorToolbar({
           >
             Guardar
           </button>
+
+          {canDownload && (
+            <button
+              type="button"
+              onClick={onDownload}
+              disabled={!hasLayers || isExporting}
+              className="shrink-0 rounded-md border border-brand-cyan bg-brand-cyan/10 px-3.5 py-1.5 text-xs font-bold whitespace-nowrap text-brand-cyan transition hover:bg-brand-cyan hover:text-brand-black disabled:cursor-not-allowed disabled:opacity-40"
+            >
+              {isExporting ? 'Descargando...' : 'Descargar'}
+            </button>
+          )}
 
           {canAttach && (
             <button

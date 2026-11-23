@@ -9,18 +9,29 @@ export function SectionCard({
   title,
   description,
   children,
+  className = '',
+  contentClassName = 'space-y-3',
+  actions,
 }: {
   title: string
   description?: string
   children: ReactNode
+  className?: string
+  contentClassName?: string
+  actions?: ReactNode
 }) {
   return (
-    <section className="rounded-lg border border-brand-line bg-brand-surface p-4">
-      <header className="mb-3">
-        <h3 className="text-xs font-bold uppercase tracking-widest text-brand-cyan">{title}</h3>
-        {description && <p className="mt-1 text-[11px] text-brand-muted">{description}</p>}
+    <section className={`rounded-lg border border-brand-line bg-brand-surface p-4 ${className}`}>
+      <header className="mb-3 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <div className="min-w-0">
+          <h3 className="text-xs font-bold uppercase tracking-widest text-brand-cyan">{title}</h3>
+          {description && <p className="mt-1 text-[11px] text-brand-muted">{description}</p>}
+        </div>
+        {actions && (
+          <div className="flex flex-wrap items-center gap-2 sm:justify-end">{actions}</div>
+        )}
       </header>
-      <div className="space-y-3">{children}</div>
+      <div className={contentClassName}>{children}</div>
     </section>
   )
 }

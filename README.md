@@ -32,8 +32,10 @@ The product interface is in Spanish. Navigation, hero, catalog, steps, contact d
 | --- | --- |
 | <img src="docs/screenshots/how-it-works.png" alt="How it works section" width="100%"> | <img src="docs/screenshots/contact.png" alt="Contact section" width="100%"> |
 
+The admin dashboard adds seven additional screenshots. Expand the section below to view them.
+
 <details>
-<summary>Admin dashboard</summary>
+<summary>Admin dashboard screenshots (7)</summary>
 
 | | |
 | --- | --- |
@@ -151,7 +153,7 @@ cp .env.example .env.local
 3. In local mode, the initial password is `trama`. Change it from the **Seguridad** section.
 4. With Supabase configured, log in with the password for `VITE_ADMIN_EMAIL`.
 
-> The local admin gate is only a browser-side lock (SHA-256 hash stored in `localStorage`). It is not real security. Use Supabase Auth for a deployed, protected admin.
+> In local mode, the admin password is a convenience lock for development. It controls access to the admin UI in that browser, but it is not server-side authentication. For a deployed site, connect Supabase so admin access is enforced by Supabase Auth and database policies.
 
 ## Environment variables
 

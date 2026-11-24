@@ -32,8 +32,10 @@ La interfaz del producto está en español. La navegación, el inicio, el catál
 | --- | --- |
 | <img src="docs/screenshots/how-it-works.png" alt="Sección Cómo funciona" width="100%"> | <img src="docs/screenshots/contact.png" alt="Sección Contacto" width="100%"> |
 
+El panel de administración suma siete capturas adicionales. Desplegá la sección de abajo para verlas.
+
 <details>
-<summary>Panel de administración</summary>
+<summary>Capturas del panel de administración (7)</summary>
 
 | | |
 | --- | --- |
@@ -151,7 +153,7 @@ cp .env.example .env.local
 3. En modo local, la contraseña inicial es `trama`. Cambiala desde la sección **Seguridad**.
 4. Con Supabase configurado, iniciá sesión con la contraseña de `VITE_ADMIN_EMAIL`.
 
-> El candado local del admin es sólo un bloqueo del lado del navegador (hash SHA-256 en `localStorage`). No es seguridad real. Usá Supabase Auth para un admin desplegado y protegido.
+> En modo local, la contraseña del admin es un candado de comodidad para desarrollo. Controla el acceso a la UI del admin en ese navegador, pero no es autenticación del lado del servidor. Para un sitio desplegado, conectá Supabase para que el acceso quede protegido por Supabase Auth y las policies de la base.
 
 ## Variables de entorno
 
